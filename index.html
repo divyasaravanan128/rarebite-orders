@@ -1,0 +1,1347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Rare Bite Orders</title>
+<meta name="theme-color" content="#7A1532">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Rare Bite">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* Layout: one working screen per tab. Order tab = menu grid + order panel (side by side on laptop, stacked on phone). */
+:root{
+  --cream:#FCF2E2; --paper:#FFFAF2; --ink:#3A0C19; --muted:#7D5B63; --line:#EAD7C4;
+  --maroon:#7A1532; --rose:#B5123A; --gold:#E9B23C; --soft:#F7E3E6;
+  --ok:#1F7A4D; --okbg:#E1F2E8; --warn:#9A5B00; --warnbg:#FCEFD6; --bad:#B42318; --badbg:#FCE4E2;
+  --display:"Dancing Script", "Snell Roundhand", "Brush Script MT", cursive;
+  --body:"Nunito", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --cream:#1E1114; --paper:#2A1A1E; --ink:#F6E7E9; --muted:#C2A3AA; --line:#4A2E35;
+  --maroon:#F08AA5; --rose:#FF7A98; --gold:#F2C14E; --soft:#3A2028;
+  --ok:#6FD39C; --okbg:#173527; --warn:#F2C14E; --warnbg:#3A2C10; --bad:#FF8A80; --badbg:#3F1A18; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --cream:#1E1114; --paper:#2A1A1E; --ink:#F6E7E9; --muted:#C2A3AA; --line:#4A2E35;
+  --maroon:#F08AA5; --rose:#FF7A98; --gold:#F2C14E; --soft:#3A2028;
+  --ok:#6FD39C; --okbg:#173527; --warn:#F2C14E; --warnbg:#3A2C10; --bad:#FF8A80; --badbg:#3F1A18; color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--cream);color:var(--ink);font:500 15px/1.4 var(--body);-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:9px 11px;width:100%;min-width:0}
+input:focus,select:focus,textarea:focus,button:focus-visible{outline:2px solid var(--rose);outline-offset:1px}
+button{cursor:pointer;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 13px;font-weight:700}
+button:disabled{opacity:.45;cursor:not-allowed}
+.btnlink{display:inline-block;border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:9px 13px;font-weight:700;color:var(--ok);text-decoration:none}
+.primary{background:var(--maroon);border-color:var(--maroon);color:var(--cream)}
+.danger{color:var(--bad);border-color:var(--bad);background:transparent}
+.ghost{background:transparent}
+.num{font-variant-numeric:tabular-nums}
+h1,h2,h3{margin:0;text-wrap:balance}
+h2{font-size:19px;font-weight:800}
+h3{font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.muted{color:var(--muted)}
+small{font-size:12.5px}
+
+header.top{position:sticky;top:0;z-index:20;background:var(--maroon);color:#FCF2E2;
+  padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.brand{font-family:var(--display);font-size:28px;line-height:1;color:#FCF2E2}
+.brand span{font-family:var(--body);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.8;margin-left:6px}
+nav.tabs{display:flex;gap:4px;flex-wrap:wrap}
+nav.tabs button{background:transparent;border:0;color:#FCF2E2;opacity:.75;padding:7px 11px}
+nav.tabs button[aria-current="page"]{opacity:1;background:rgba(255,255,255,.16)}
+.status{margin-left:auto;font-size:12.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;white-space:nowrap}
+.p-ok{background:var(--okbg);color:var(--ok)} .p-warn{background:var(--warnbg);color:var(--warn)} .p-bad{background:var(--badbg);color:var(--bad)}
+.p-soft{background:var(--soft);color:var(--maroon)}
+header .pill{background:rgba(255,255,255,.18);color:#FCF2E2}
+header .pill.alert{background:var(--gold);color:#3A0C19}
+
+main{padding-block:16px 90px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));max-width:1280px;margin:0 auto}
+.view{display:flex;flex-direction:column;gap:16px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:14px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;font-weight:800;color:var(--muted);min-width:0}
+.seg{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{border:0;border-radius:0;flex:1;padding:8px 10px;background:var(--paper);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--maroon);color:var(--cream)}
+
+/* ORDER */
+.pos{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:16px;align-items:start}
+.menu-tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.menu-tools input{flex:1 1 200px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips button{padding:5px 11px;border-radius:999px;font-size:13px}
+.chips button[aria-pressed="true"]{background:var(--maroon);color:var(--cream);border-color:var(--maroon)}
+.cat{display:flex;flex-direction:column;gap:8px}
+.items{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:8px}
+.item{text-align:left;display:flex;flex-direction:column;gap:3px;padding:10px 11px;min-height:78px;font-weight:700;border-radius:12px;position:relative}
+.item:hover:not(:disabled){border-color:var(--rose)}
+.item .nm{font-size:14.5px;line-height:1.2}
+.item .pr{color:var(--rose);font-weight:800}
+.item .lf{font-size:12px;color:var(--muted);font-weight:700}
+.item.low .lf{color:var(--warn)}
+.item.out .lf{color:var(--bad)}
+.tag-egg{font-size:10.5px;font-weight:800;color:var(--ok);letter-spacing:.05em}
+.cart{position:sticky;top:64px;display:flex;flex-direction:column;max-height:calc(100vh - 80px)}
+.cart>*{flex-shrink:0}
+.cart{padding:0;overflow:hidden;gap:0}
+.cart-head,.cart-foot{padding:14px;display:flex;flex-direction:column;gap:10px}
+.cart-head{border-bottom:1px solid var(--line)}
+.cart-foot{border-top:1px solid var(--line);background:var(--paper)}
+.cart>.cart-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:12px}
+.cart-body>*{flex-shrink:0}
+.lines{display:flex;flex-direction:column;gap:6px}
+.line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.line .nm{font-weight:700;font-size:14px}
+.qty{display:flex;align-items:center;gap:4px}
+.qty button{padding:2px 9px;border-radius:8px}
+.line .amt{font-weight:800;text-align:right;min-width:62px}
+.linkbtn{border:0;background:none;padding:0;color:var(--rose);font-weight:800;font-size:12px;text-decoration:underline}
+.tot{display:flex;flex-direction:column;gap:3px}
+.tot div{display:flex;justify-content:space-between}
+.tot .grand{font-size:20px;font-weight:800;color:var(--maroon);border-top:1px solid var(--line);padding-top:6px;margin-top:3px}
+.note{font-size:13px;border-radius:10px;padding:8px 10px}
+.mobilebar{display:none}
+details summary{cursor:pointer;font-weight:800;font-size:13.5px}
+
+/* tables */
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:800}
+td.r,th.r{text-align:right}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden;min-width:60px}
+.bar i{display:block;height:100%;background:var(--rose)}
+
+/* orders */
+.olist{display:flex;flex-direction:column;gap:8px}
+.ocard{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;font-weight:500;padding:11px 13px}
+.ocard .no{font-weight:800;color:var(--maroon);font-size:16px}
+.ocard .it{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ocard.cx{opacity:.55}
+
+/* dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
+.kpi{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font-size:22px;font-weight:800}
+.kpi span{font-size:12px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.kpi em.v{font-style:normal;font-size:inherit;font-weight:800;text-transform:none;letter-spacing:0}.kpi em.pos{color:var(--ok)}.kpi em.neg{color:var(--bad)}
+.kpi.hero{background:var(--maroon);border-color:var(--maroon);color:var(--cream)}
+.kpi.hero span{color:var(--cream);opacity:.8}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.vbars{display:flex;align-items:flex-end;gap:4px;height:140px;padding-top:16px}
+.vbars div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:3px;height:100%;min-width:0}
+.vbars i{display:block;width:100%;max-width:28px;background:var(--rose);border-radius:5px 5px 0 0;min-height:1px}
+.vbars small{font-size:10px;color:var(--muted);white-space:nowrap}
+
+/* sheet */
+.overlay{position:fixed;inset:0;background:rgba(30,10,15,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:16px}
+.sheet{background:var(--paper);border-radius:16px;max-width:480px;width:100%;max-height:90vh;overflow:auto;padding:18px;display:flex;flex-direction:column;gap:12px;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+.kot{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:13.5px;background:var(--cream);border:1px dashed var(--muted);border-radius:8px;padding:14px;white-space:pre-wrap}
+.toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--cream);padding:10px 16px;border-radius:10px;z-index:60;font-weight:700;max-width:90vw}
+
+@media (max-width:900px){
+  .pos{grid-template-columns:1fr}
+  .cart{position:static;max-height:none}
+  .cart>.cart-body{overflow:visible}
+  .mobilebar{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:30;gap:10px;align-items:center;
+    background:var(--maroon);color:var(--cream);padding:10px max(16px,env(safe-area-inset-right,0px)) max(10px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+  .mobilebar button{margin-left:auto;background:var(--cream);color:var(--maroon);border:0}
+  .grid2{grid-template-columns:1fr}
+  header.top{position:static;gap:8px}
+  .brand{font-size:24px}
+  nav.tabs{flex-wrap:nowrap;overflow-x:auto;width:100%;scrollbar-width:none}
+  nav.tabs button{white-space:nowrap;padding:6px 10px}
+  .status{margin-left:0;width:100%}
+}
+@media print{
+  body{background:#fff;color:#000}
+  header.top,main,.mobilebar,.overlay .noprint{display:none!important}
+  .overlay{position:static;background:none;padding:0;display:block}
+  .sheet{box-shadow:none;padding:0;max-height:none}
+  .kot{border:0;background:#fff;color:#000;font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="brand">The Rare Bite<span>Orders</span></div>
+  <nav class="tabs" aria-label="Sections">
+    <button data-tab="order">New order</button>
+    <button data-tab="orders">Orders</button>
+    <button data-tab="deliveries">Deliveries</button>
+    <button data-tab="stock">Stock</button>
+    <button data-tab="expenses">Expenses</button>
+    <button data-tab="dash">Dashboard</button>
+    <button data-tab="customers">Customers</button>
+    <button data-tab="settings">Data &amp; settings</button>
+  </nav>
+  <div class="status" id="status"></div>
+</header>
+<main id="main"></main>
+<div class="mobilebar" id="mobilebar" hidden></div>
+<div class="overlay" id="overlay" hidden><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+/* =========================================================
+   1. DEFAULT MENU (from the Diwali menu)
+   A "pool" is one batch of stock. A variant says how much of a
+   pool one sale uses (a box of 8 chocolates uses 8 pieces).
+   ========================================================= */
+const DEFAULT_MENU = {
+  pools: [
+    {id:"cupcake_set", name:"Assorted cupcakes (sets of 6)", def:10},
+    {id:"teacake", name:"Tea cake", def:20},
+    {id:"taco_choco", name:"Cake taco – chocolate", def:10},
+    {id:"taco_vanilla", name:"Cake taco – vanilla", def:10},
+    {id:"tl_rose", name:"Rose milk tres leches", def:10},
+    {id:"tl_milo", name:"Milo tres leches", def:10},
+    {id:"london", name:"London viral cake slice", def:10},
+    {id:"brownie", name:"Brownie (piece)", def:10},
+    {id:"blondie", name:"Blondie (piece)", def:10},
+    {id:"brownie_tub", name:"Brownie tub", def:10},
+    {id:"eg_brownie_cup", name:"Eggless brownie cups", def:20},
+    {id:"eg_blondie_cup", name:"Eggless blondie cups", def:20},
+    {id:"bomb_tub", name:"Mini bomboloni tub", def:10},
+    {id:"bomb", name:"Bomboloni (piece)", def:10},
+    {id:"cookie_bites", name:"Cookie bites (packs of 3)", def:13},
+    {id:"butter_cookies", name:"Butter cookies (50 g packs, 500 g)", def:10},
+    {id:"jimjam", name:"Jim jam cookies (50 g packs, 600 g)", def:12},
+    {id:"choc_pcs", name:"Homemade chocolates (pieces)", def:100},
+    {id:"truffle", name:"Choco truffle", def:20},
+    {id:"ragi", name:"Ragi chocos (100 g packs)", def:10},
+    {id:"samosa", name:"Samosa (packs of 3)", def:20},
+    {id:"pizza", name:"Single-serve pizza", def:10},
+    {id:"pizza_cup_pcs", name:"Pizza cups (pieces)", def:40}
+  ],
+  items: [
+    {id:"cupcakes", cat:"Cakes & tres leches", name:"Assorted cupcakes (set of 6)", v:[["std","",200,"cupcake_set",1]]},
+    {id:"teacake", cat:"Cakes & tres leches", name:"Tea cake", v:[["marble","Marble",25,"teacake",1],["rose","Rose milk",25,"teacake",1]]},
+    {id:"caketaco", cat:"Cakes & tres leches", name:"Cake taco", v:[["choco","Chocolate",250,"taco_choco",1],["vanilla","Vanilla",250,"taco_vanilla",1]]},
+    {id:"tl_rose", cat:"Cakes & tres leches", name:"Rose milk tres leches", v:[["std","",230,"tl_rose",1]]},
+    {id:"tl_milo", cat:"Cakes & tres leches", name:"Milo tres leches", v:[["std","",230,"tl_milo",1]]},
+    {id:"london", cat:"Cakes & tres leches", name:"London viral cake slice", v:[["std","",150,"london",1]]},
+    {id:"brownie", cat:"Brownies & blondies", name:"Brownie", v:[["std","",100,"brownie",1]]},
+    {id:"blondie", cat:"Brownies & blondies", name:"Blondie", v:[["std","",100,"blondie",1]]},
+    {id:"brownie_tub", cat:"Brownies & blondies", name:"Brownie tub", v:[["std","",230,"brownie_tub",1]]},
+    {id:"eg_brownie_cup", cat:"Brownies & blondies", name:"Eggless brownie cups (3)", eggless:true, v:[["std","",100,"eg_brownie_cup",1]]},
+    {id:"eg_blondie_cup", cat:"Brownies & blondies", name:"Eggless blondie cups (3)", eggless:true, v:[["std","",100,"eg_blondie_cup",1]]},
+    {id:"bomb_tub", cat:"Bomboloni", name:"Mini bomboloni tub", v:[["std","",250,"bomb_tub",1]]},
+    {id:"bomb", cat:"Bomboloni", name:"Bomboloni", v:[["std","",100,"bomb",1]]},
+    {id:"cookie_bites", cat:"Cookies & chocolates", name:"Cookie bites (3 pcs)", v:[["std","",100,"cookie_bites",1]]},
+    {id:"butter_cookies", cat:"Cookies & chocolates", name:"Butter cookies (50 g)", v:[["std","",50,"butter_cookies",1]]},
+    {id:"jimjam", cat:"Cookies & chocolates", name:"Jim jam cookies (50 g)", v:[["std","",50,"jimjam",1]]},
+    {id:"chocolates", cat:"Cookies & chocolates", name:"Homemade chocolates", v:[["box8","Box of 8",150,"choc_pcs",8],["pack4","Pack of 4",75,"choc_pcs",4],["single","Single",20,"choc_pcs",1]]},
+    {id:"truffle", cat:"Cookies & chocolates", name:"Choco truffle", v:[["std","",20,"truffle",1]]},
+    {id:"ragi", cat:"Cookies & chocolates", name:"Ragi chocos (100 g)", v:[["std","",75,"ragi",1]]},
+    {id:"samosa", cat:"Savouries", name:"Samosa (pack of 3)", v:[["std","",25,"samosa",1]]},
+    {id:"pizza", cat:"Savouries", name:"Single-serve pizza", v:[["std","",200,"pizza",1]]},
+    {id:"pizza_cups", cat:"Savouries", name:"Pizza cups (2 pcs)", v:[["std","",150,"pizza_cup_pcs",2]]},
+    {id:"giftbox", cat:"Gift boxes", name:"Diwali gift box", v:[["g500","₹500 box",500,"",1],["g1000","₹1,000 box",1000,"",1]]},
+    {id:"loyalty_treat", cat:"Rewards", name:"Loyalty treat: mini cupcakes, one flavour (6 pcs)", hidden:true, v:[["std","",0,"",1]]}
+  ]
+};
+function expandMenu(m){
+  return {pools:m.pools.map(p=>({...p})),
+    items:m.items.map(it=>({id:it.id,cat:it.cat,name:it.name,eggless:!!it.eggless,hidden:!!it.hidden,active:true,
+      variants:it.v.map(([id,label,price,pool,uses])=>({id,label,price,pool,uses}))})),
+    updatedAt:"2026-10-30T00:00:00.000Z"};
+}
+/* The 75 printed coupon cards (same codes as RareBite_Coupon_Codes.csv) */
+const PRINTED_CODES = "RB001-VR2 RB002-ECP RB003-R8Q RB004-LGC RB005-TQF RB006-Q8M RB007-2ZR RB008-GC5 RB009-L49 RB010-X7Z RB011-2Z3 RB012-ZHS RB013-MC5 RB014-EU2 RB015-HRN RB016-JHN RB017-FLR RB018-FBR RB019-Z3Q RB020-FXN RB021-P76 RB022-JD4 RB023-KDS RB024-CDG RB025-AEU RB026-NZR RB027-YUN RB028-VQX RB029-WM8 RB030-7DD RB031-AU9 RB032-TEK RB033-QVF RB034-S4T RB035-7PE RB036-SP3 RB037-LEW RB038-9TF RB039-U4W RB040-QY3 RB041-DCQ RB042-HRX RB043-RGS RB044-YAZ RB045-WRV RB046-FKK RB047-CRN RB048-B4A RB049-SUR RB050-QPS RB051-YU9 RB052-4QT RB053-7SQ RB054-24U RB055-JU8 RB056-NRX RB057-U7T RB058-H6U RB059-R5A RB060-BLK RB061-YQC RB062-K63 RB063-UWW RB064-YWZ RB065-ZGY RB066-L5A RB067-U8A RB068-DCB RB069-RJ2 RB070-DSP RB071-TYA RB072-DUM RB073-D9X RB074-QJW RB075-HKV".split(" ");
+const CATS = ["Cakes & tres leches","Brownies & blondies","Bomboloni","Cookies & chocolates","Savouries","Gift boxes"];
+const EXP_CATS = ["Ingredients","Packaging","Fuel & travel","Gas & electricity","Stall fees","Printing & marketing","Equipment","Other"];
+const COGS_CATS = ["Ingredients","Packaging"];
+
+/* =========================================================
+   2. STORAGE  (everything lives in this browser; CSV = backup/sync)
+   Kept in one place so an online database can replace it later.
+   ========================================================= */
+const KEY = "rarebite.v1";
+let S;
+function uid(){ const a=new Uint8Array(8); (crypto.getRandomValues?crypto.getRandomValues(a):a.forEach((_,i)=>a[i]=Math.random()*256)); return [...a].map(b=>b.toString(16).padStart(2,"0")).join(""); }
+function now(){ return new Date().toISOString(); }
+function blankState(){
+  return {v:1, device:{id:uid(), letter:"A"},
+    settings:{loyaltyMin:200, couponIssueMin:500, couponPct:10, couponMax:100, couponDays:90},
+    menu:expandMenu(DEFAULT_MENU), sessions:[], orders:[], expenses:[], couponIssues:[],
+    couponCodes:PRINTED_CODES.slice(), seq:{day:"",n:0}, lastExport:null, ordersSinceExport:0};
+}
+function load(){
+  try{ const raw=localStorage.getItem(KEY); if(raw){ S=JSON.parse(raw); } }catch(e){ S=null; }
+  if(!S){ S=blankState(); }
+  if(!S.sessions.length){ newSession("Stall – "+fmtDate(new Date())); }
+  save(true);
+  try{ navigator.storage && navigator.storage.persist && navigator.storage.persist(); }catch(e){}
+}
+let storageOk=true;
+function save(quiet){
+  try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOk=true; }
+  catch(e){ storageOk=false; if(!quiet) toast("Couldn't save on this device. Export CSVs now so nothing is lost."); }
+  renderStatus();
+  if(!quiet && typeof scheduleSync==="function") scheduleSync(2500);
+}
+
+/* =========================================================
+   2b. ONLINE SYNC (Supabase)
+   Every change is saved on the device first. When there is internet,
+   changed records are sent up and other devices' changes come down.
+   The database keeps the newer version of each record.
+   ========================================================= */
+const SYNC_SQL = key => `-- Rare Bite order app: run once in Supabase → SQL Editor → New query → Run
+create table if not exists rb_records (
+  kind text not null,
+  id text not null,
+  data jsonb not null,
+  updated_at text not null,
+  synced_at timestamptz not null default clock_timestamp(),
+  primary key (kind, id)
+);
+create index if not exists rb_records_synced on rb_records (synced_at);
+create table if not exists rb_config (k text primary key, v text not null);
+alter table rb_records enable row level security;
+alter table rb_config enable row level security;
+insert into rb_config (k, v) values ('shop_key', '${key}')
+  on conflict (k) do update set v = excluded.v;
+
+create or replace function rb_push(p_key text, p_rows jsonb) returns integer
+language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if p_key is distinct from (select v from rb_config where k = 'shop_key') then
+    raise exception 'wrong shop key' using errcode = '28000';
+  end if;
+  insert into rb_records (kind, id, data, updated_at, synced_at)
+  select r->>'kind', r->>'id', r->'data', r->>'updated_at', clock_timestamp()
+  from jsonb_array_elements(p_rows) r
+  on conflict (kind, id) do update
+    set data = excluded.data, updated_at = excluded.updated_at, synced_at = clock_timestamp()
+    where rb_records.updated_at < excluded.updated_at;
+  get diagnostics n = row_count;
+  return n;
+end $$;
+
+create or replace function rb_pull(p_key text, p_since timestamptz) returns setof rb_records
+language plpgsql security definer set search_path = public as $$
+begin
+  if p_key is distinct from (select v from rb_config where k = 'shop_key') then
+    raise exception 'wrong shop key' using errcode = '28000';
+  end if;
+  return query select * from rb_records where synced_at > p_since order by synced_at limit 1000;
+end $$;
+
+revoke all on function rb_push(text, jsonb) from public;
+revoke all on function rb_pull(text, timestamptz) from public;
+grant execute on function rb_push(text, jsonb) to anon, authenticated;
+grant execute on function rb_pull(text, timestamptz) to anon, authenticated;
+`;
+let syncState={busy:false, msg:"", err:"", timer:null};
+function syncOn(){ return !!(S.sync&&S.sync.url&&S.sync.anon&&S.sync.key); }
+function makeKey(){ return "rb-"+uid()+uid(); }
+function connCode(){ return btoa(unescape(encodeURIComponent(JSON.stringify({u:S.sync.url,a:S.sync.anon,k:S.sync.key})))); }
+function readConnCode(code){ try{ const o=JSON.parse(decodeURIComponent(escape(atob(String(code).trim())))); if(o.u&&o.a&&o.k) return {url:o.u,anon:o.a,key:o.k}; }catch(e){} return null; }
+function cleanUrl(u){ u=String(u||"").trim().replace(/\/+$/,"").replace(/\/rest\/v1$/,""); if(u&&!/^https?:\/\//.test(u)) u="https://"+u; return u; }
+async function rpc(fn,body){
+  const hd={"Content-Type":"application/json","apikey":S.sync.anon};
+  if(/^eyJ/.test(S.sync.anon)) hd["Authorization"]="Bearer "+S.sync.anon;   // older "anon" keys are JWTs
+  const r=await fetch(S.sync.url+"/rest/v1/rpc/"+fn,{method:"POST",headers:hd,body:JSON.stringify(body)});
+  const t=await r.text(); let j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+  if(!r.ok){ const m=j&&(j.message||j.hint)||t||("HTTP "+r.status);
+    if(/wrong shop key/.test(m)) throw new Error("The shop key doesn't match the database. Re-enter the connection code.");
+    if(r.status===404||/Could not find the function/.test(m)) throw new Error("The database isn't set up yet. Run the setup SQL in Supabase.");
+    if(r.status===401||/Invalid API key|No API key/i.test(m)) throw new Error("Supabase rejected the API key. Check you copied the anon / publishable key.");
+    throw new Error(m); }
+  return j;
+}
+// Everything that syncs, as records of {kind, id, updated_at, data}
+function allRecords(){
+  const out=[];
+  S.orders.forEach(o=>out.push({kind:"order",id:o.id,updated_at:o.updatedAt,data:o}));
+  S.expenses.forEach(x=>out.push({kind:"expense",id:x.id,updated_at:x.updatedAt,data:x}));
+  S.couponIssues.forEach(c=>out.push({kind:"coupon",id:c.code,updated_at:c.updatedAt,data:c}));
+  S.sessions.forEach(x=>out.push({kind:"stockday",id:x.id,updated_at:x.updatedAt,data:x}));
+  out.push({kind:"menu",id:"menu",updated_at:S.menu.updatedAt,data:S.menu});
+  out.push({kind:"shop",id:"shop",updated_at:S.settingsUpdatedAt||"2026-10-30T00:00:00.000Z",data:{settings:S.settings,couponCodes:S.couponCodes}});
+  return out.filter(r=>r.id&&r.updated_at);
+}
+function pendingRecords(){ const pushed=S.sync.pushed||{}; return allRecords().filter(r=>String(r.updated_at)>String(pushed[r.kind+":"+r.id]||"")); }
+function applyRemote(r){
+  const k=r.kind, d=r.data; let changed=false;
+  const merge=(arr,key)=>{ const i=arr.findIndex(x=>x[key]===r.id); if(i<0){ arr.push(d); changed=true; } else if(String(r.updated_at)>String(arr[i].updatedAt||"")){ arr[i]=d; changed=true; } };
+  if(k==="order") merge(S.orders,"id");
+  else if(k==="expense") merge(S.expenses,"id");
+  else if(k==="coupon") merge(S.couponIssues,"code");
+  else if(k==="stockday") merge(S.sessions,"id");
+  else if(k==="menu"){ if(String(r.updated_at)>String(S.menu.updatedAt||"")){ S.menu=d; changed=true; } }
+  else if(k==="shop"){ if(String(r.updated_at)>String(S.settingsUpdatedAt||"")){ S.settings=d.settings; S.couponCodes=d.couponCodes; S.settingsUpdatedAt=r.updated_at; changed=true; } }
+  S.sync.pushed[k+":"+r.id]=r.updated_at>(S.sync.pushed[k+":"+r.id]||"")?r.updated_at:S.sync.pushed[k+":"+r.id];
+  return changed;
+}
+function scheduleSync(ms){ if(!syncOn()) return; clearTimeout(syncState.timer); syncState.timer=setTimeout(()=>syncNow(),ms||0); }
+async function syncNow(manual){
+  if(!syncOn()||syncState.busy) return;
+  if(navigator.onLine===false){ syncState.err=""; syncState.msg="offline"; renderStatus(); if(manual) toast("No internet. Changes are saved here and will sync when you're back online."); return; }
+  syncState.busy=true; renderStatus();
+  let got=0, sent=0;
+  try{
+    S.sync.pushed=S.sync.pushed||{};
+    // 1. send local changes, 300 at a time
+    const pend=pendingRecords();
+    for(let i=0;i<pend.length;i+=300){
+      const batch=pend.slice(i,i+300);
+      await rpc("rb_push",{p_key:S.sync.key,p_rows:batch});
+      batch.forEach(r=>{ S.sync.pushed[r.kind+":"+r.id]=r.updated_at; }); sent+=batch.length;
+      try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+    }
+    // 2. fetch everyone's changes since last time (5-minute overlap, merging is idempotent)
+    let since=S.sync.cursor?new Date(new Date(S.sync.cursor).getTime()-300000).toISOString():"1970-01-01T00:00:00Z";
+    let changed=false;
+    for(let guard=0;guard<50;guard++){
+      const rows=await rpc("rb_pull",{p_key:S.sync.key,p_since:since})||[];
+      rows.forEach(r=>{ if(applyRemote(r)) { changed=true; got++; } if(!S.sync.cursor||r.synced_at>S.sync.cursor) S.sync.cursor=r.synced_at; });
+      if(rows.length<1000) break;
+      since=rows[rows.length-1].synced_at;
+    }
+    S.sync.lastOk=now(); syncState.err=""; syncState.msg="";
+    try{ localStorage.setItem(KEY,JSON.stringify(S)); }catch(e){}
+    if(changed){ if(tab==="order"){ renderMenu(); renderStatus(); } else if($("#overlay").hidden) render(); }
+    if(manual) toast(`Synced. Sent ${sent}, received ${got}.`);
+  }catch(e){
+    syncState.err=e.message||String(e);
+    if(manual) toast("Sync failed: "+syncState.err);
+  }finally{ syncState.busy=false; renderStatus(); if(tab==="settings"&&$("#syncBox")) $("#syncBox").innerHTML=syncBoxHtml(); }
+}
+window.addEventListener("online",()=>scheduleSync(500));
+window.addEventListener("offline",()=>{ syncState.msg="offline"; renderStatus(); });
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") scheduleSync(300); });
+setInterval(()=>{ if(document.visibilityState==="visible") syncNow(); },60000);
+
+/* =========================================================
+   3. HELPERS
+   ========================================================= */
+const $=s=>document.querySelector(s);
+const h=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const inr=n=>"₹"+Math.round(n||0).toLocaleString("en-IN");
+const pad=n=>String(n).padStart(2,"0");
+const dayKey=d=>{d=new Date(d);return d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());};
+function fmtDate(d){ return new Date(d).toLocaleDateString("en-IN",{day:"numeric",month:"short"}); }
+function fmtTime(d){ return new Date(d).toLocaleTimeString("en-IN",{hour:"numeric",minute:"2-digit"}); }
+function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toast.t); toast.t=setTimeout(()=>t.hidden=true,2600); }
+function findItem(id){ return S.menu.items.find(i=>i.id===id); }
+function findVariant(itemId,vid){ const it=findItem(itemId); return it&&it.variants.find(v=>v.id===vid); }
+function poolName(id){ const p=S.menu.pools.find(p=>p.id===id); return p?p.name:id; }
+function activeOrders(){ return S.orders.filter(o=>!o.deleted && o.status!=="cancelled"); }
+function paidOf(o){ return (+o.paidUpi||0)+(+o.paidCash||0); }
+function lineCost(l){ if(l.cost!=null&&l.cost!=="") return +l.cost||0; const v=findVariant(l.itemId,l.variantId); return v&&v.cost?+v.cost:0; }
+function normPhone(p){ return String(p||"").replace(/\D/g,"").slice(-10); }
+
+/* =========================================================
+   4. STOCK  (left = prepared − sold; worked out from orders,
+   so two devices never fight over a counter)
+   ========================================================= */
+function currentSession(){ return S.sessions.filter(s=>!s.deleted).sort((a,b)=>a.startedAt<b.startedAt?1:-1)[0]; }
+function newSession(name, prepared){
+  // Same name = same stock day on every device, so sales from both devices add up after an import.
+  const id="day_"+name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"");
+  const ex=S.sessions.find(x=>x.id===id&&!x.deleted);
+  if(ex){ ex.startedAt=now(); ex.updatedAt=now(); return ex; }
+  const p={}; S.menu.pools.forEach(pl=>p[pl.id]=prepared&&prepared[pl.id]!=null?prepared[pl.id]:pl.def);
+  const s={id, name, startedAt:now(), prepared:p, updatedAt:now()};
+  S.sessions.push(s); return s;
+}
+function soldBySession(sid){
+  const sold={};
+  activeOrders().filter(o=>o.sessionId===sid).forEach(o=>o.items.forEach(l=>{ if(l.pool) sold[l.pool]=(sold[l.pool]||0)+l.qty*(l.uses||1); }));
+  return sold;
+}
+function leftMap(extraLines){
+  const s=currentSession(); const sold=soldBySession(s.id); const left={};
+  S.menu.pools.forEach(p=>{ left[p.id]=(s.prepared[p.id]??0)-(sold[p.id]||0); });
+  (extraLines||[]).forEach(l=>{ if(l.pool) left[l.pool]-=l.qty*(l.uses||1); });
+  return left;
+}
+
+/* =========================================================
+   5. COUPONS & LOYALTY  (also worked out from saved orders)
+   ========================================================= */
+function couponStatus(code){
+  code=String(code||"").trim().toUpperCase();
+  if(!code) return {ok:false,msg:""};
+  if(!S.couponCodes.includes(code)) return {ok:false,msg:"Not one of our coupon codes. Check the card."};
+  const used=activeOrders().find(o=>o.couponCode===code);
+  if(used) return {ok:false,msg:"Already used on "+fmtDate(used.createdAt)+" (order "+used.no+")."};
+  const iss=S.couponIssues.find(c=>c.code===code&&!c.deleted);
+  if(iss){
+    const exp=new Date(iss.date); exp.setDate(exp.getDate()+(+S.settings.couponDays||90));
+    if(new Date()>exp) return {ok:false,msg:"Expired on "+fmtDate(exp)+"."};
+    return {ok:true,msg:"Valid. Given to "+(iss.name||"a customer")+" on "+fmtDate(iss.date)+"."};
+  }
+  return {ok:true,msg:"Valid. (No record of who it was given to.)", unknown:true};
+}
+function nextFreeCode(){
+  const given=new Set(S.couponIssues.filter(c=>!c.deleted).map(c=>c.code));
+  return S.couponCodes.find(c=>!given.has(c))||"";
+}
+function stampsFor(phone, excludeId){
+  phone=normPhone(phone); if(phone.length<10) return 0;
+  return activeOrders().filter(o=>o.id!==excludeId && o.stamp && o.cust && normPhone(o.cust.phone)===phone).length;
+}
+function lastCustomer(phone){
+  phone=normPhone(phone); if(phone.length<10) return null;
+  const o=S.orders.filter(o=>!o.deleted&&o.cust&&normPhone(o.cust.phone)===phone).sort((a,b)=>a.createdAt<b.createdAt?1:-1)[0];
+  return o?o.cust:null;
+}
+
+/* =========================================================
+   6. CART  (the order being taken right now)
+   ========================================================= */
+let cart;
+function resetCart(){
+  cart={type:"stall", useStock:true, lines:[], cust:{name:"",phone:"",flat:""}, consent:false,
+    couponCode:"", couponOk:null, manualDisc:0, payMode:"upi", paidUpi:0, paidCash:0,
+    giveCoupon:"", deliverOn:"", notes:"", treatAdded:false};
+}
+function cartCalc(){
+  const sub=cart.lines.reduce((a,l)=>a+(l.free?0:l.qty*l.price),0);
+  let cd=0; if(cart.couponOk) cd=Math.min(Math.round(sub*(+S.settings.couponPct||10)/100), +S.settings.couponMax||100);
+  const md=Math.min(Math.max(0,+cart.manualDisc||0), sub-cd);
+  const total=Math.max(0,sub-cd-md);
+  return {sub,cd,md,total};
+}
+function addLine(itemId,vid){
+  const it=findItem(itemId), v=findVariant(itemId,vid); if(!it||!v) return;
+  const ex=cart.lines.find(l=>l.itemId===itemId&&l.variantId===vid&&!l.free);
+  if(cart.useStock && v.pool){ const left=leftMap(cart.lines); if(left[v.pool]<(v.uses||1)){ toast(it.name+(v.label?" ("+v.label+")":"")+" is sold out."); return; } }
+  if(ex) ex.qty++;
+  else cart.lines.push({key:uid(), itemId, variantId:vid, name:it.name+(v.label?" – "+v.label:""), qty:1, price:v.price, listPrice:v.price, free:false, pool:v.pool, uses:v.uses||1, reward:itemId==="loyalty_treat"});
+  renderMenu(); renderCart();
+}
+
+/* =========================================================
+   7. RENDER: header + tabs
+   ========================================================= */
+let tab="order", menuCat="All", menuSearch="";
+function setTab(t){ tab=t; document.querySelectorAll("nav.tabs button").forEach(b=>b.setAttribute("aria-current", b.dataset.tab===t?"page":"false")); render(); window.scrollTo(0,0); }
+function renderStatus(){
+  const el=$("#status"); if(!el||!S) return;
+  const s=currentSession();
+  const since=S.ordersSinceExport||0;
+  const old=!S.lastExport || (Date.now()-new Date(S.lastExport))>86400000;
+  let sy="";
+  if(S.sync&&S.sync.url){
+    const pend=pendingRecords().length;
+    sy = syncState.busy?`<span class="pill">Syncing…</span>`:
+         syncState.err?`<span class="pill alert" title="${h(syncState.err)}">Sync problem</span>`:
+         (navigator.onLine===false||syncState.msg==="offline")?`<span class="pill alert">Offline${pend?" · "+pend+" waiting":""}</span>`:
+         pend?`<span class="pill">${pend} to sync</span>`:`<span class="pill">Synced ${S.sync.lastOk?fmtTime(S.sync.lastOk):""}</span>`;
+  }
+  el.innerHTML=`<span class="pill">Device ${h(S.device.letter)}</span><span class="pill">Stock: ${h(s?s.name:"–")}</span>`+sy+
+    (storageOk?"":`<span class="pill alert">Not saving on this device</span>`)+
+    (S.sync&&S.sync.url?"":(since&&old?`<span class="pill alert">${since} change${since>1?"s":""} not exported</span>`:`<span class="pill">Backed up ${S.lastExport?fmtDate(S.lastExport)+" "+fmtTime(S.lastExport):"never"}</span>`));
+}
+function render(){
+  const m=$("#main");
+  $("#mobilebar").hidden = tab!=="order";
+  if(tab==="order") m.innerHTML=viewOrder();
+  if(tab==="orders") m.innerHTML=viewOrders();
+  if(tab==="stock") m.innerHTML=viewStock();
+  if(tab==="expenses") m.innerHTML=viewExpenses();
+  if(tab==="dash") m.innerHTML=viewDash();
+  if(tab==="deliveries") m.innerHTML=viewDeliveries();
+  if(tab==="customers") m.innerHTML=viewCustomers();
+  if(tab==="settings") m.innerHTML=viewSettings();
+  if(tab==="order"){ renderMenu(); renderCart(); }
+  renderStatus();
+}
+
+/* ---------- New order ---------- */
+function viewOrder(){
+  return `<div class="pos">
+    <section class="view" aria-label="Menu">
+      <div class="menu-tools"><input id="msearch" type="search" placeholder="Search the menu" value="${h(menuSearch)}" aria-label="Search the menu">
+      <div class="chips" id="mcats">${["All",...CATS].map(c=>`<button data-cat="${h(c)}" aria-pressed="${c===menuCat}">${h(c)}</button>`).join("")}</div></div>
+      <div id="menuGrid" class="view"></div>
+    </section>
+    <aside class="card cart" id="cart" aria-label="Current order"></aside>
+  </div>`;
+}
+function renderMenu(){
+  const g=$("#menuGrid"); if(!g) return;
+  const left=leftMap(cart.useStock?cart.lines:[]);
+  const q=menuSearch.trim().toLowerCase();
+  let html="";
+  CATS.filter(c=>menuCat==="All"||menuCat===c).forEach(cat=>{
+    const items=S.menu.items.filter(i=>i.cat===cat&&i.active&&!i.hidden&&(!q||i.name.toLowerCase().includes(q)));
+    if(!items.length) return;
+    html+=`<div class="cat"><h3>${h(cat)}</h3><div class="items">`;
+    items.forEach(it=>it.variants.forEach(v=>{
+      const L=v.pool?Math.floor(left[v.pool]/(v.uses||1)):null;
+      const out=cart.useStock&&v.pool&&L<=0, low=cart.useStock&&v.pool&&L>0&&L<=3;
+      html+=`<button class="item ${out?"out":low?"low":""}" data-add="${h(it.id)}|${h(v.id)}" ${out?"disabled":""}>
+        ${it.eggless?'<span class="tag-egg">EGGLESS</span>':""}
+        <span class="nm">${h(it.name)}${v.label?" – "+h(v.label):""}</span>
+        <span class="pr num">${inr(v.price)}</span>
+        <span class="lf num">${v.pool?(cart.useStock?(out?"Sold out":L+" left"):"Not from stock"):"Made to order"}</span></button>`;
+    }));
+    html+=`</div></div>`;
+  });
+  g.innerHTML=html||`<p class="muted">Nothing matches “${h(menuSearch)}”.</p>`;
+}
+function renderCart(){
+  const c=$("#cart"); if(!c) return;
+  const t=cartCalc();
+  const phone=normPhone(cart.cust.phone);
+  const stamps=stampsFor(phone);
+  const willStamp = phone.length===10 && cart.consent && t.total>= (+S.settings.loyaltyMin||0) && cart.lines.length>0;
+  const nextStamp=stamps+(willStamp?1:0);
+  const treatDue = willStamp && nextStamp%5===0;
+  const cs=cart.couponCode?couponStatus(cart.couponCode):null;
+  const showIssue = t.total>=(+S.settings.couponIssueMin||500);
+  const bodyScroll=(c.querySelector(".cart-body")||{}).scrollTop||0;
+  c.innerHTML=`
+  <div class="cart-head">
+  <div class="row" style="justify-content:space-between"><h2>Order</h2>${cart.lines.length?'<button class="ghost" data-act="clear">Clear</button>':""}</div>
+  <div class="seg" role="group" aria-label="Order type">
+    ${[["stall","Stall"],["preorder","Pre-order"],["party","Party / delivery"]].map(([k,l])=>`<button data-type="${k}" aria-pressed="${cart.type===k}">${l}</button>`).join("")}
+  </div>
+  </div>
+  <div class="cart-body">
+  <label class="row" style="font-size:13.5px;font-weight:700"><input type="checkbox" id="useStock" style="width:auto" ${cart.useStock?"checked":""}> Take from today's stock</label>
+  ${cart.type!=="stall"?`<label class="f">Deliver on<input type="date" id="deliverOn" value="${h(cart.deliverOn)}"></label>`:""}
+  <div class="lines">${cart.lines.length?cart.lines.map(l=>`
+    <div class="line"><div><div class="nm">${h(l.name)}</div>
+      <small class="muted num">${l.free?(l.reward?"Loyalty treat":"Free (sample / freebie)"):inr(l.price)+" each"}</small>
+      ${l.reward?"":` · <button class="linkbtn" data-free="${l.key}">${l.free?"Charge it":"Make free"}</button>`}</div>
+      <div class="qty"><button data-dec="${l.key}" aria-label="One less">−</button><span class="num">${l.qty}</span><button data-inc="${l.key}" aria-label="One more">+</button></div>
+      <div class="amt num">${l.free?"Free":inr(l.qty*l.price)}</div></div>`).join(""):`<p class="muted" style="margin:6px 0">Tap items on the menu to add them.</p>`}</div>
+
+  <details id="dCust" ${cart.custOpen||cart.cust.phone||cart.cust.name?"open":""}><summary>Customer details (optional)</summary>
+    <div class="view" style="gap:8px;margin-top:8px">
+      <label class="row" style="font-size:13.5px;font-weight:700"><input type="checkbox" id="consent" style="width:auto" ${cart.consent?"checked":""}> Customer is happy for us to save these</label>
+      <div class="grid2"><label class="f">Phone<input id="cPhone" inputmode="tel" value="${h(cart.cust.phone)}" placeholder="10 digits"></label>
+      <label class="f">Name<input id="cName" value="${h(cart.cust.name)}"></label></div>
+      <label class="f">Flat / address<input id="cFlat" value="${h(cart.cust.flat)}"></label>
+      <div id="loyal">${phone.length===10?`<div class="note p-soft">Loyalty: <b class="num">${stamps}</b> stamp${stamps===1?"":"s"} so far${willStamp?`, this order adds 1 → <b>${nextStamp}</b>`:` · this order ${cart.consent?"is below "+inr(S.settings.loyaltyMin)+" so gets no stamp":"needs the consent tick for a stamp"}`}.</div>`:""}
+      ${treatDue&&!cart.lines.some(l=>l.reward)?`<div class="note p-ok">This is stamp ${nextStamp}: give the loyalty treat. <button class="primary" data-act="treat" style="margin-left:6px">Add free treat</button></div>`:""}</div>
+      ${!cart.consent&&(cart.cust.phone||cart.cust.name)?`<small class="muted">Without the tick, details are not saved with the order.</small>`:""}
+    </div></details>
+
+  <details id="dCoupon" ${cart.couponOpen||cart.couponCode||cart.manualDisc?"open":""}><summary>Coupon or discount</summary>
+    <div class="view" style="gap:8px;margin-top:8px">
+      <div class="row"><input id="coupon" placeholder="Code on the card, e.g. RB012-K7P" value="${h(cart.couponCode)}" style="flex:1;text-transform:uppercase">
+      <button data-act="applyCoupon">${cart.couponOk?"Remove":"Apply"}</button></div>
+      ${cs&&cs.msg?`<div class="note ${cart.couponOk?"p-ok":cs.ok?"p-soft":"p-bad"}">${h(cs.msg)}${cart.couponOk?" "+S.settings.couponPct+"% off, up to "+inr(S.settings.couponMax)+".":""}</div>`:""}
+      <label class="f">Other discount (₹)<input id="manualDisc" type="number" min="0" inputmode="numeric" value="${cart.manualDisc||""}"></label>
+    </div></details>
+
+  ${showIssue?`<div class="note p-soft">Order is ${inr(S.settings.couponIssueMin)}+: hand over a coupon card.
+    <label class="f" style="margin-top:6px">Code on the card you give<input id="giveCoupon" placeholder="${h(nextFreeCode())}" value="${h(cart.giveCoupon)}" style="text-transform:uppercase"></label>
+    <small>Leave empty if you didn't give one.</small></div>`:""}
+
+  <label class="f">Note for the kitchen<input id="notes" value="${h(cart.notes)}" placeholder="e.g. no nuts, write Happy Birthday"></label>
+  </div>
+  <div class="cart-foot">
+  <div class="tot num">
+    <div><span>Subtotal</span><span>${inr(t.sub)}</span></div>
+    ${t.cd?`<div><span>Coupon ${h(cart.couponCode.toUpperCase())}</span><span>− ${inr(t.cd)}</span></div>`:""}
+    ${t.md?`<div><span>Discount</span><span>− ${inr(t.md)}</span></div>`:""}
+    <div class="grand"><span>Total</span><span>${inr(t.total)}</span></div>
+  </div>
+
+  <div class="seg" role="group" aria-label="Payment">
+    ${[["upi","UPI"],["cash","Cash"],["split","Split / part"],["later","Pay later"]].map(([k,l])=>`<button data-pay="${k}" aria-pressed="${cart.payMode===k}">${l}</button>`).join("")}
+  </div>
+  ${cart.payMode==="split"?`<div class="grid2"><label class="f">UPI ₹<input id="pUpi" type="number" min="0" inputmode="numeric" value="${cart.paidUpi||""}"></label><label class="f">Cash ₹<input id="pCash" type="number" min="0" inputmode="numeric" value="${cart.paidCash||""}"></label></div><small class="muted num">Balance after this: ${inr(Math.max(0,t.total-(+cart.paidUpi||0)-(+cart.paidCash||0)))}</small>`:""}
+
+  <button class="primary" data-act="saveOrder" ${cart.lines.length?"":"disabled"} style="padding:13px;font-size:16px">Save order &amp; show KOT · ${inr(t.total)}</button>
+  </div>`;
+  const nb=c.querySelector(".cart-body"); if(nb) nb.scrollTop=bodyScroll;
+  // mobile bar
+  const mb=$("#mobilebar");
+  const n=cart.lines.reduce((a,l)=>a+l.qty,0);
+  mb.innerHTML=`<span class="num"><b>${n}</b> item${n===1?"":"s"} · <b>${inr(t.total)}</b></span><button data-act="toCart">View order</button>`;
+}
+
+function saveOrder(){
+  const t=cartCalc();
+  if(!cart.lines.length) return;
+  if(cart.useStock){ const left=leftMap(cart.lines); const bad=Object.keys(left).filter(k=>left[k]<0); if(bad.length){ toast("Not enough stock: "+bad.map(poolName).join(", ")); return; } }
+  if(cart.couponCode && !cart.couponOk){ toast("Apply or clear the coupon code first."); return; }
+  const give=String(cart.giveCoupon||"").trim().toUpperCase();
+  if(give){ if(!S.couponCodes.includes(give)){ toast(give+" isn't one of our coupon codes."); return; }
+    const iss=S.couponIssues.find(c=>c.code===give&&!c.deleted); if(iss){ toast(give+" was already given to "+(iss.name||"someone")+"."); return; } }
+  let paidUpi=0, paidCash=0;
+  if(cart.payMode==="upi") paidUpi=t.total; else if(cart.payMode==="cash") paidCash=t.total;
+  else if(cart.payMode==="split"){ paidUpi=+cart.paidUpi||0; paidCash=+cart.paidCash||0; if(paidUpi+paidCash>t.total){ toast("Paid more than the total. Check the amounts."); return; } }
+  const today=dayKey(new Date());
+  if(S.seq.day!==today){ S.seq={day:today,n:0}; }
+  S.seq.n++;
+  const phone=normPhone(cart.cust.phone);
+  const keep=cart.consent && (cart.cust.name||cart.cust.phone||cart.cust.flat);
+  const o={id:uid(), no:S.device.letter+"-"+pad(S.seq.n), createdAt:now(), updatedAt:now(), device:S.device.letter,
+    type:cart.type, status:"active", sessionId:cart.useStock?currentSession().id:"",
+    cust:keep?{name:cart.cust.name.trim(), phone:phone, flat:cart.cust.flat.trim()}:null,
+    items:cart.lines.map(l=>({itemId:l.itemId,variantId:l.variantId,name:l.name,qty:l.qty,price:l.free?0:l.price,listPrice:l.listPrice,free:!!l.free,reward:!!l.reward,pool:l.pool,uses:l.uses,cost:(findVariant(l.itemId,l.variantId)||{}).cost||0})),
+    subtotal:t.sub, couponCode:cart.couponOk?cart.couponCode.toUpperCase():"", couponDisc:t.cd, manualDisc:t.md, total:t.total,
+    paidUpi, paidCash, stamp:!!(keep && phone.length===10 && t.total>=(+S.settings.loyaltyMin||0)),
+    issuedCoupon:give, deliverOn:cart.type!=="stall"?cart.deliverOn:"", delivered:cart.type==="stall", notes:cart.notes.trim()};
+  S.orders.push(o);
+  if(give) S.couponIssues.push({id:give, code:give, name:keep?o.cust.name:"", phone:keep?phone:"", date:o.createdAt, orderId:o.id, updatedAt:now()});
+  S.ordersSinceExport=(S.ordersSinceExport||0)+1;
+  save();
+  resetCart(); render(); showKot(o.id);
+}
+
+/* ---------- KOT ---------- */
+function kotText(o){
+  const L=[];
+  L.push("THE RARE BITE · KOT");
+  L.push("Order "+o.no+" · "+fmtDate(o.createdAt)+" "+fmtTime(o.createdAt));
+  L.push(({stall:"Stall",preorder:"Pre-order",party:"Party / delivery"})[o.type]+(o.deliverOn?" · deliver "+fmtDate(o.deliverOn):""));
+  if(o.cust&&(o.cust.name||o.cust.flat)) L.push("For: "+[o.cust.name,o.cust.flat].filter(Boolean).join(", "));
+  L.push("--------------------------------");
+  o.items.forEach(l=>L.push(String(l.qty).padStart(2)+" x "+l.name+(l.free?" (FREE)":"")));
+  L.push("--------------------------------");
+  if(o.notes) L.push("Note: "+o.notes);
+  L.push("Subtotal ".padEnd(20)+inr(o.subtotal));
+  if(o.couponDisc) L.push(("Coupon "+o.couponCode).padEnd(20)+"-"+inr(o.couponDisc));
+  if(o.manualDisc) L.push("Discount".padEnd(20)+"-"+inr(o.manualDisc));
+  L.push("TOTAL".padEnd(20)+inr(o.total));
+  const paid=paidOf(o);
+  L.push(paid>=o.total?"PAID"+(o.paidUpi&&o.paidCash?" (UPI "+inr(o.paidUpi)+" + cash "+inr(o.paidCash)+")":o.paidUpi?" by UPI":" in cash"):"Paid "+inr(paid)+" · BALANCE "+inr(o.total-paid));
+  if(o.issuedCoupon) L.push("Coupon card given: "+o.issuedCoupon);
+  if(o.stamp) L.push("Loyalty stamp: "+stampsFor(o.cust.phone)+" of 10");
+  return L.join("\n");
+}
+function receiptText(o){
+  return "Thank you for ordering from The Rare Bite!\n\n"+o.items.map(l=>l.qty+" x "+l.name+(l.free?" (free)":" – "+inr(l.qty*l.price))).join("\n")+
+   (o.couponDisc?"\nCoupon: -"+inr(o.couponDisc):"")+(o.manualDisc?"\nDiscount: -"+inr(o.manualDisc):"")+"\nTotal: "+inr(o.total)+
+   (paidOf(o)<o.total?"\nBalance to pay: "+inr(o.total-paidOf(o)):"")+
+   (o.issuedCoupon?"\n\nYour coupon "+o.issuedCoupon+" gives "+S.settings.couponPct+"% off your next order (up to "+inr(S.settings.couponMax)+").":"")+
+   "\n\nInstagram: @therarebite_thebakingstudio";
+}
+function showKot(id){
+  const o=S.orders.find(x=>x.id===id); if(!o) return;
+  const ph=o.cust&&normPhone(o.cust.phone);
+  openSheet(`<div class="row noprint" style="justify-content:space-between"><h2>Order ${h(o.no)} saved</h2><button class="ghost" data-act="close">Close</button></div>
+   <div class="kot" id="kotBox">${h(kotText(o))}</div>
+   <div class="row noprint">
+     <button class="primary" data-act="print">Print KOT</button>
+     <button data-copy="kot" data-id="${o.id}">Copy KOT</button>
+     <button data-copy="receipt" data-id="${o.id}">Copy receipt for WhatsApp</button>
+     ${ph&&ph.length===10?`<a class="btnlink" href="https://wa.me/91${ph}?text=${encodeURIComponent(receiptText(o))}" target="_blank" rel="noopener">Send on WhatsApp</a>`:""}
+   </div>`);
+}
+function openSheet(html){ $("#sheet").innerHTML=html; $("#overlay").hidden=false; }
+function closeSheet(){ $("#overlay").hidden=true; $("#sheet").innerHTML=""; }
+
+/* ---------- Orders ---------- */
+let ordFilter="today", ordSearch="";
+function viewOrders(){
+  const today=dayKey(new Date());
+  let list=S.orders.filter(o=>!o.deleted);
+  if(ordFilter==="today") list=list.filter(o=>dayKey(o.createdAt)===today);
+  if(ordFilter==="due") list=list.filter(o=>o.status!=="cancelled"&&(paidOf(o)<o.total||!o.delivered));
+  const q=ordSearch.trim().toLowerCase();
+  if(q) list=list.filter(o=>(o.no+" "+(o.cust?o.cust.name+" "+o.cust.phone+" "+o.cust.flat:"")+" "+o.items.map(l=>l.name).join(" ")).toLowerCase().includes(q));
+  list.sort((a,b)=>a.createdAt<b.createdAt?1:-1);
+  const act=list.filter(o=>o.status!=="cancelled");
+  return `<div class="view">
+   <div class="row"><h2>Orders</h2>
+    <div class="chips">${[["today","Today"],["due","Unpaid or not delivered"],["all","All"]].map(([k,l])=>`<button data-of="${k}" aria-pressed="${ordFilter===k}">${l}</button>`).join("")}</div>
+    <input id="osearch" type="search" placeholder="Search name, phone, flat, item, order no." value="${h(ordSearch)}" style="flex:1 1 220px"></div>
+   <small class="muted num">${act.length} order${act.length===1?"":"s"} · ${inr(act.reduce((a,o)=>a+o.total,0))} billed · ${inr(act.reduce((a,o)=>a+paidOf(o),0))} received</small>
+   <div class="olist">${list.length?list.map(o=>{
+     const paid=paidOf(o), cx=o.status==="cancelled";
+     const chips=(cx?'<span class="pill p-bad">Cancelled</span>':
+       (paid>=o.total?'<span class="pill p-ok">Paid</span>':paid>0?`<span class="pill p-warn">Due ${inr(o.total-paid)}</span>`:'<span class="pill p-bad">Unpaid</span>')+
+       (o.type!=="stall"?(o.delivered?'<span class="pill p-ok">Delivered</span>':`<span class="pill p-soft">Deliver ${o.deliverOn?fmtDate(o.deliverOn):"–"}</span>`):""));
+     return `<button class="card ocard ${cx?"cx":""}" data-open="${o.id}"><span class="no">${h(o.no)}</span>
+      <span style="min-width:0"><b>${h(o.cust&&o.cust.name||({stall:"Stall",preorder:"Pre-order",party:"Party / delivery"})[o.type])}</b> <small class="muted">${fmtDate(o.createdAt)} ${fmtTime(o.createdAt)}</small>
+      <span class="it" style="display:block">${h(o.items.map(l=>l.qty+"× "+l.name).join(", "))}</span></span>
+      <span style="text-align:right"><b class="num">${inr(o.total)}</b><br>${chips}</span></button>`;}).join(""):`<div class="card muted">No orders here yet. New orders show up as soon as they're saved.</div>`}</div></div>`;
+}
+function openOrder(id){
+  const o=S.orders.find(x=>x.id===id); if(!o) return;
+  const due=o.total-paidOf(o);
+  openSheet(`<div class="row" style="justify-content:space-between"><h2>Order ${h(o.no)}</h2><button class="ghost" data-act="close">Close</button></div>
+   <div class="kot">${h(kotText(o))}</div>
+   ${o.cust?`<small class="muted">${h([o.cust.name,o.cust.phone,o.cust.flat].filter(Boolean).join(" · "))}</small>`:""}
+   ${o.status!=="cancelled"&&due>0?`<div class="card view" style="gap:8px"><b>Record a payment (due ${inr(due)})</b>
+     <div class="grid2"><label class="f">UPI ₹<input id="rpUpi" type="number" min="0" inputmode="numeric" value="${due}"></label><label class="f">Cash ₹<input id="rpCash" type="number" min="0" inputmode="numeric" value=""></label></div>
+     <button class="primary" data-pay-order="${o.id}">Save payment</button></div>`:""}
+   <div class="row">
+     <button data-kot="${o.id}">Show KOT</button>
+     ${o.status!=="cancelled"&&!o.delivered?`<button data-deliver="${o.id}">Mark delivered</button>`:""}
+     ${o.status!=="cancelled"?`<button class="danger" data-cancel-ask="${o.id}">Cancel order</button>`:""}
+   </div><div id="cxConfirm"></div>`);
+}
+
+/* ---------- Stock ---------- */
+function suggestQty(prep,sold){
+  if(prep<=0) return 0;
+  if(sold>=prep) return Math.ceil(prep*1.2);          // sold out: make 20% more
+  return Math.max(sold, Math.ceil(prep/2));          // leftovers: make what sold, but never cut more than half in one go
+}
+function viewStock(){
+  const s=currentSession(); const sold=soldBySession(s.id);
+  const rows=S.menu.pools.map(p=>{ const prep=s.prepared[p.id]??0, sd=sold[p.id]||0, left=prep-sd;
+    return `<tr><td>${h(p.name)}</td><td class="r"><input class="num" type="number" min="0" data-prep="${p.id}" value="${prep}" style="width:80px;text-align:right" aria-label="Prepared ${h(p.name)}"></td>
+    <td class="r num">${sd}</td><td class="r num"><b style="color:${left<=0?"var(--bad)":left<=3?"var(--warn)":"inherit"}">${left}</b></td>
+    <td class="r num">${(()=>{ const sg=suggestQty(prep,sd); return sg===p.def?`<span class="muted">${sg}</span>`:`<b>${sg}</b> <small class="muted">(usual ${p.def})</small>`; })()}</td>
+    <td style="width:22%"><div class="bar"><i style="width:${prep?Math.min(100,sd/prep*100):0}%"></i></div></td></tr>`; }).join("");
+  const past=S.sessions.filter(x=>!x.deleted&&x.id!==s.id).sort((a,b)=>a.startedAt<b.startedAt?1:-1).slice(0,6);
+  return `<div class="view">
+   <div class="row" style="justify-content:space-between"><div><h2>${h(s.name)} <button data-act="eod" style="margin-left:6px;vertical-align:middle">End-of-day summary</button></h2><small class="muted">Started ${fmtDate(s.startedAt)} ${fmtTime(s.startedAt)}. Change “Prepared” if she makes more or fewer.</small></div>
+   <div class="row"><input id="newSessName" placeholder="Name, e.g. Stall – 7 Nov" style="width:200px"><button class="primary" data-act="newSession">Start a new stock day</button></div></div>
+   <div class="card tw"><table><thead><tr><th>Item</th><th class="r">Prepared</th><th class="r">Sold</th><th class="r">Left</th><th class="r">Make next time</th><th>Sold so far</th></tr></thead><tbody>${rows}</tbody></table></div>
+   <div class="card view" style="gap:8px"><b>Prep planner</b>
+     <small class="muted">“Make next time” is a suggestion from this stock day: if an item sold out, make 20% more; if some was left over, make what actually sold, but never less than half of what you made (so one slow day doesn't drop an item). Use it at the end of the day, once sales are in. Import the other laptop's CSVs first so both devices' sales count.</small>
+     <div class="row"><button data-act="useSuggest">Use suggestions as the usual quantities</button></div><div id="sgConfirm"></div></div>
+   <small class="muted">A new stock day starts from the usual quantities (set in Data &amp; settings → Menu). Leftovers from the old day stay in its report below.</small>
+   ${past.length?`<div class="card tw"><h3 style="margin-bottom:8px">Earlier stock days: what was left over</h3><table><thead><tr><th>Day</th><th>Left over</th></tr></thead><tbody>${
+     past.map(x=>{ const sd=soldBySession(x.id); const lo=S.menu.pools.map(p=>[p.name,(x.prepared[p.id]??0)-(sd[p.id]||0)]).filter(a=>a[1]>0);
+       return `<tr><td>${h(x.name)}</td><td>${lo.length?h(lo.map(a=>a[1]+" "+a[0]).join(", ")):"Everything sold"}</td></tr>`;}).join("")}</tbody></table></div>`:""}
+  </div>`;
+}
+
+/* ---------- Expenses ---------- */
+let expEdit=null;
+function viewExpenses(){
+  const e=expEdit||{date:dayKey(new Date()),category:"Ingredients",kind:"running",amount:"",paidBy:"",note:""};
+  const list=S.expenses.filter(x=>!x.deleted).sort((a,b)=>a.date<b.date?1:-1);
+  const month=dayKey(new Date()).slice(0,7);
+  const mList=list.filter(x=>x.date.slice(0,7)===month);
+  return `<div class="view">
+   <div class="card view" style="gap:10px"><h2>${expEdit&&expEdit.id?"Edit expense":"Add an expense"}</h2>
+    <div class="grid2">
+     <label class="f">Date<input id="eDate" type="date" value="${h(e.date)}"></label>
+     <label class="f">Amount ₹<input id="eAmt" type="number" min="0" inputmode="decimal" value="${h(e.amount)}"></label>
+     <label class="f">What for<select id="eCat">${EXP_CATS.map(c=>`<option ${c===e.category?"selected":""}>${c}</option>`).join("")}</select></label>
+     <label class="f">Type<select id="eKind"><option value="running" ${e.kind==="running"?"selected":""}>Running cost (used up)</option><option value="investment" ${e.kind==="investment"?"selected":""}>Investment (oven, moulds, tools)</option></select></label>
+     <label class="f">Paid by<input id="ePaid" value="${h(e.paidBy)}" placeholder="UPI, cash, card…"></label>
+     <label class="f">Note<input id="eNote" value="${h(e.note)}" placeholder="e.g. 2 kg butter, petrol to Koyambedu"></label>
+    </div>
+    <div class="row"><button class="primary" data-act="saveExp">${expEdit&&expEdit.id?"Save changes":"Add expense"}</button>
+     ${expEdit&&expEdit.id?`<button data-act="cancelExp">Cancel</button><button class="danger" data-act="delExp">Delete</button>`:""}</div>
+   </div>
+   <div class="card tw"><div class="row" style="justify-content:space-between;margin-bottom:6px"><h3>All expenses</h3><small class="muted num">This month: ${inr(mList.filter(x=>x.kind!=="investment").reduce((a,x)=>a+ +x.amount,0))} running · ${inr(mList.filter(x=>x.kind==="investment").reduce((a,x)=>a+ +x.amount,0))} investment</small></div>
+   ${list.length?`<table><thead><tr><th>Date</th><th>What for</th><th>Note</th><th>Type</th><th class="r">Amount</th></tr></thead><tbody>${
+     list.map(x=>`<tr data-exp="${x.id}" style="cursor:pointer"><td>${fmtDate(x.date)}</td><td>${h(x.category)}</td><td>${h(x.note)}</td><td>${x.kind==="investment"?'<span class="pill p-soft">Investment</span>':'<span class="muted">Running</span>'}</td><td class="r num">${inr(x.amount)}</td></tr>`).join("")}</tbody></table><small class="muted">Tap a row to edit it.</small>`:`<p class="muted">No expenses yet. Add groceries, packaging, petrol and stall fees here to see real profit.</p>`}</div>
+  </div>`;
+}
+
+/* ---------- Dashboard ---------- */
+let period="today";
+function periodRange(p){
+  const d=new Date(); d.setHours(0,0,0,0);
+  if(p==="today") return [d,new Date(+d+86400000)];
+  if(p==="week"){ const s=new Date(d); s.setDate(d.getDate()-((d.getDay()+6)%7)); return [s,new Date(+s+7*86400000)]; }
+  if(p==="month"){ const s=new Date(d.getFullYear(),d.getMonth(),1); return [s,new Date(d.getFullYear(),d.getMonth()+1,1)]; }
+  return [new Date(2000,0,1),new Date(2100,0,1)];
+}
+function inRange(iso,[a,b]){ const t=new Date(iso); return t>=a&&t<b; }
+function viewDash(){
+  const R=periodRange(period);
+  const os=activeOrders().filter(o=>inRange(o.createdAt,R));
+  const ex=S.expenses.filter(x=>!x.deleted&&inRange(x.date+"T12:00:00",R));
+  const sales=os.reduce((a,o)=>a+o.total,0), got=os.reduce((a,o)=>a+paidOf(o),0);
+  const upi=os.reduce((a,o)=>a+(+o.paidUpi||0),0), cash=os.reduce((a,o)=>a+(+o.paidCash||0),0);
+  const disc=os.reduce((a,o)=>a+(o.couponDisc||0)+(o.manualDisc||0),0);
+  const free=os.reduce((a,o)=>a+o.items.filter(l=>l.free).reduce((b,l)=>b+l.qty*(l.listPrice||0),0),0);
+  const treats=os.reduce((a,o)=>a+o.items.filter(l=>l.reward).reduce((b,l)=>b+l.qty,0),0);
+  const run=ex.filter(x=>x.kind!=="investment"), inv=ex.filter(x=>x.kind==="investment");
+  const runT=run.reduce((a,x)=>a+ +x.amount,0), invT=inv.reduce((a,x)=>a+ +x.amount,0);
+  const cogs=run.filter(x=>COGS_CATS.includes(x.category)).reduce((a,x)=>a+ +x.amount,0);
+  const gross=sales-cogs, net=sales-runT;
+  // all-time payback
+  const allSales=activeOrders().reduce((a,o)=>a+o.total,0);
+  const allRun=S.expenses.filter(x=>!x.deleted&&x.kind!=="investment").reduce((a,x)=>a+ +x.amount,0);
+  const allInv=S.expenses.filter(x=>!x.deleted&&x.kind==="investment").reduce((a,x)=>a+ +x.amount,0);
+  const allNet=allSales-allRun;
+  // items
+  const it={}; os.forEach(o=>o.items.forEach(l=>{ const k=l.name; it[k]=it[k]||{q:0,r:0,c:0,known:true}; it[k].q+=l.qty; it[k].r+=l.free?0:l.qty*l.price; const c=lineCost(l); it[k].c+=l.qty*c; if(!c&&!l.reward) it[k].known=false; }));
+  const costKnown=Object.values(it).reduce((a,v)=>a+v.c,0), unknownItems=Object.values(it).filter(v=>!v.known).length;
+  const top=Object.entries(it).sort((a,b)=>b[1].r-a[1].r||b[1].q-a[1].q);
+  const maxR=Math.max(1,...top.map(t=>t[1].r));
+  // expense by category
+  const bc={}; ex.forEach(x=>bc[x.category]=(bc[x.category]||0)+ +x.amount);
+  const cats=Object.entries(bc).sort((a,b)=>b[1]-a[1]); const maxC=Math.max(1,...cats.map(c=>c[1]));
+  // last 14 days
+  const days=[]; for(let i=13;i>=0;i--){ const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()-i); const k=dayKey(d);
+    days.push([d, activeOrders().filter(o=>dayKey(o.createdAt)===k).reduce((a,o)=>a+o.total,0)]); }
+  const maxD=Math.max(1,...days.map(d=>d[1]));
+  const kpi=(l,v,cls="")=>`<div class="kpi ${cls}"><span>${l}</span><b class="num">${v}</b></div>`;
+  return `<div class="view">
+   <div class="row"><h2>Dashboard</h2><button data-act="eod">End-of-day summary</button><div class="chips">${[["today","Today"],["week","This week"],["month","This month"],["all","All time"]].map(([k,l])=>`<button data-period="${k}" aria-pressed="${period===k}">${l}</button>`).join("")}</div></div>
+   <div class="kpis">
+     ${kpi("Sales",inr(sales),"hero")}${kpi("Orders",os.length)}${kpi("Average order",inr(os.length?sales/os.length:0))}
+     ${kpi("Money received",inr(got))}${kpi("Still to collect",inr(sales-got))}
+   </div>
+   <div class="kpis">
+     ${kpi("Ingredients + packaging",inr(cogs))}${kpi("Gross profit",inr(gross))}
+     ${kpi("All running costs",inr(runT))}${kpi("Net profit",`<em class="v ${net<0?"neg":"pos"}">${inr(net)}</em>`)}
+   </div>
+   <div class="cols">
+    <div class="card"><h3>Sales, last 14 days</h3><div class="vbars">${days.map(([d,v])=>`<div title="${fmtDate(d)}: ${inr(v)}"><small class="num">${v?Math.round(v/100)/10+"k":""}</small><i style="height:${v/maxD*100}%"></i><small>${d.getDate()}</small></div>`).join("")}</div></div>
+    <div class="card view" style="gap:8px"><h3>How people paid</h3>
+      ${[["UPI",upi],["Cash",cash],["Not yet paid",sales-got]].map(([l,v])=>`<div class="row" style="flex-wrap:nowrap"><span style="width:110px">${l}</span><div class="bar" style="flex:1"><i style="width:${sales?v/sales*100:0}%"></i></div><b class="num" style="width:80px;text-align:right">${inr(v)}</b></div>`).join("")}
+      <small class="muted num">Discounts given ${inr(disc)} · freebies worth ${inr(free)} · loyalty treats ${treats}</small></div>
+   </div>
+   <div class="cols">
+    <div class="card tw"><h3 style="margin-bottom:6px">What sold, and what each made</h3>${top.length?`<table><thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">Profit</th><th></th></tr></thead><tbody>${top.map(([n,v])=>`<tr><td>${h(n)}</td><td class="r num">${v.q}</td><td class="r num">${inr(v.r)}</td><td class="r num">${v.known?inr(v.c):'<small class="muted">add cost</small>'}</td><td class="r num">${v.known?`<b style="color:${v.r-v.c<0?"var(--bad)":"inherit"}">${inr(v.r-v.c)}</b>`:"–"}</td><td style="width:18%"><div class="bar"><i style="width:${v.r/maxR*100}%"></i></div></td></tr>`).join("")}</tbody></table>
+      <small class="muted num">Cost of what sold (incl. freebies): ${inr(costKnown)}${unknownItems?` · ${unknownItems} item${unknownItems>1?"s have":" has"} no cost yet. Add it in Data &amp; settings → Menu`:""}.</small>`:`<p class="muted">No sales in this period yet.</p>`}</div>
+    <div class="card tw"><h3 style="margin-bottom:6px">Where the money went</h3>${cats.length?`<table><tbody>${cats.map(([c,v])=>`<tr><td>${h(c)}</td><td class="r num">${inr(v)}</td><td style="width:35%"><div class="bar"><i style="width:${v/maxC*100}%"></i></div></td></tr>`).join("")}</tbody></table>`:`<p class="muted">No expenses in this period. Add them in the Expenses tab.</p>`}
+      ${invT?`<small class="muted num">Includes ${inr(invT)} of investment, which is kept out of profit.</small>`:""}</div>
+   </div>
+   <div class="card view" style="gap:8px"><h3>Investment payback (all time)</h3>
+     ${allInv?`<div class="row" style="flex-wrap:nowrap"><div class="bar" style="flex:1;height:12px"><i style="width:${Math.max(0,Math.min(100,allNet/allInv*100))}%;background:var(--ok)"></i></div><b class="num">${allInv?Math.max(0,Math.round(allNet/allInv*100)):0}%</b></div>
+     <small class="muted num">Invested ${inr(allInv)} in equipment. Net profit so far ${inr(allNet)}. ${allNet>=allInv?"The investment has paid for itself.":"Another "+inr(allInv-allNet)+" of profit pays it back."}</small>`:`<small class="muted">Add equipment purchases as “Investment” in Expenses to see how long they take to pay back.</small>`}
+   </div>
+   <small class="muted">Gross profit = sales − ingredients − packaging. Net profit = sales − all running costs (fuel, gas, stall fees, printing too). Investments are kept separate.</small>
+  </div>`;
+}
+
+/* ---------- End-of-day summary ---------- */
+function eodText(){
+  const R=periodRange("today"); const today=new Date();
+  const os=activeOrders().filter(o=>inRange(o.createdAt,R));
+  const cx=S.orders.filter(o=>!o.deleted&&o.status==="cancelled"&&inRange(o.createdAt,R)).length;
+  const sales=os.reduce((a,o)=>a+o.total,0), upi=os.reduce((a,o)=>a+(+o.paidUpi||0),0), cash=os.reduce((a,o)=>a+(+o.paidCash||0),0);
+  const disc=os.reduce((a,o)=>a+(o.couponDisc||0)+(o.manualDisc||0),0);
+  const free=os.reduce((a,o)=>a+o.items.filter(l=>l.free&&!l.reward).reduce((b,l)=>b+l.qty*(l.listPrice||0),0),0);
+  const treats=os.reduce((a,o)=>a+o.items.filter(l=>l.reward).reduce((b,l)=>b+l.qty,0),0);
+  const cGiven=os.filter(o=>o.issuedCoupon).length, cUsed=os.filter(o=>o.couponCode).length;
+  const ex=S.expenses.filter(x=>!x.deleted&&x.date===dayKey(today)), exT=ex.reduce((a,x)=>a+ +x.amount,0);
+  const cost=os.reduce((a,o)=>a+o.items.reduce((b,l)=>b+l.qty*lineCost(l),0),0);
+  const it={}; os.forEach(o=>o.items.forEach(l=>{ it[l.name]=(it[l.name]||0)+l.qty; }));
+  const s=currentSession(); const sd=soldBySession(s.id);
+  const lo=S.menu.pools.map(p=>[p.name,(s.prepared[p.id]??0)-(sd[p.id]||0)]).filter(a=>a[1]>0);
+  const out=S.menu.pools.filter(p=>(s.prepared[p.id]??0)>0&&(s.prepared[p.id]??0)-(sd[p.id]||0)<=0).map(p=>p.name);
+  const L=[];
+  L.push("THE RARE BITE · "+today.toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"}));
+  L.push("Stock day: "+s.name+" · device "+S.device.letter);
+  L.push("");
+  L.push("Orders: "+os.length+(cx?" ("+cx+" cancelled)":""));
+  L.push("Sales: "+inr(sales));
+  L.push("Received: UPI "+inr(upi)+" · cash "+inr(cash));
+  if(sales-upi-cash>0) L.push("Still to collect: "+inr(sales-upi-cash));
+  if(disc) L.push("Discounts: "+inr(disc));
+  if(free) L.push("Freebies (menu value): "+inr(free));
+  if(treats) L.push("Loyalty treats given: "+treats);
+  if(cGiven||cUsed) L.push("Coupon cards: "+cGiven+" given, "+cUsed+" used");
+  if(cost) L.push("Cost of what sold (from menu costs): "+inr(cost)+" → profit on items "+inr(sales-cost));
+  if(exT) L.push("Expenses today: "+inr(exT)+" ("+ex.map(x=>x.category+" "+inr(x.amount)).join(", ")+")");
+  L.push("");
+  L.push("SOLD");
+  Object.entries(it).sort((a,b)=>b[1]-a[1]).forEach(([n,q])=>L.push("  "+q+" × "+n));
+  if(!Object.keys(it).length) L.push("  Nothing yet");
+  L.push("");
+  if(out.length) L.push("SOLD OUT: "+out.join(", "));
+  L.push("LEFT OVER: "+(lo.length?lo.map(a=>a[1]+" "+a[0]).join(", "):"nothing"));
+  if(S.ordersSinceExport) L.push("\n⚠ "+S.ordersSinceExport+" change(s) not exported yet. Export the CSV files before closing.");
+  return L.join("\n");
+}
+function showEod(){
+  openSheet(`<div class="row noprint" style="justify-content:space-between"><h2>End of day</h2><button class="ghost" data-act="close">Close</button></div>
+   <div class="kot">${h(eodText())}</div>
+   <div class="row noprint"><button class="primary" data-act="copyEod">Copy for WhatsApp</button><button data-act="print">Print</button><button data-act="exportAll">Export CSV files</button></div>
+   <small class="muted noprint">This covers orders taken on this device. Import the other laptop's CSV files first to see both together.</small>`);
+}
+
+/* ---------- Deliveries (pre-orders & party orders) ---------- */
+let delShowDone=false, delDay="";
+function deliveryList(){ return S.orders.filter(o=>!o.deleted&&o.status!=="cancelled"&&o.type!=="stall"); }
+function viewDeliveries(){
+  const today=dayKey(new Date()), tmr=dayKey(new Date(Date.now()+86400000));
+  const all=deliveryList();
+  const open=all.filter(o=>!o.delivered).sort((a,b)=>(a.deliverOn||"9999")<(b.deliverOn||"9999")?-1:1);
+  const label=d=>!d?"No date set":d<today?"Overdue · "+fmtDate(d):d===today?"Today · "+fmtDate(d):d===tmr?"Tomorrow · "+fmtDate(d):new Date(d).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"});
+  const groups={}; open.forEach(o=>{ const k=o.deliverOn&&o.deliverOn<today?"overdue":(o.deliverOn||"none"); (groups[k]=groups[k]||[]).push(o); });
+  const dates=[...new Set(open.map(o=>o.deliverOn).filter(Boolean))].sort();
+  if(!delDay||!dates.includes(delDay)) delDay=dates.find(d=>d>=today)||dates[0]||"";
+  const make={}; open.filter(o=>o.deliverOn===delDay).forEach(o=>o.items.forEach(l=>{ make[l.name]=(make[l.name]||0)+l.qty; }));
+  const card=o=>{ const due=o.total-paidOf(o); const ph=o.cust&&normPhone(o.cust.phone);
+    return `<div class="card view" style="gap:6px">
+      <div class="row" style="justify-content:space-between"><b style="color:var(--maroon)">${h(o.no)} · ${h(o.cust&&o.cust.name||({preorder:"Pre-order",party:"Party / delivery"})[o.type])}</b>
+      ${due>0?`<span class="pill p-warn">Balance ${inr(due)}</span>`:'<span class="pill p-ok">Paid</span>'}</div>
+      ${o.cust?`<small class="muted">${h([o.cust.flat,o.cust.phone].filter(Boolean).join(" · "))}</small>`:""}
+      <div style="font-size:14px">${h(o.items.map(l=>l.qty+" × "+l.name).join(", "))}</div>
+      ${o.notes?`<div class="note p-soft">${h(o.notes)}</div>`:""}
+      <div class="row"><button class="primary" data-deliver="${o.id}">Mark delivered</button><button data-open="${o.id}">${due>0?"Record payment":"Details"}</button>
+      ${ph&&ph.length===10?`<a class="btnlink" href="https://wa.me/91${ph}?text=${encodeURIComponent("Hi"+(o.cust.name?" "+o.cust.name:"")+", your Rare Bite order "+o.no+" is ready"+(due>0?". Balance to pay: "+inr(due):"")+". Thank you!")}" target="_blank" rel="noopener">WhatsApp: order ready</a>`:""}</div></div>`; };
+  const order=["overdue",...dates.filter(d=>d>=today),"none"];
+  const done=all.filter(o=>o.delivered).sort((a,b)=>a.updatedAt<b.updatedAt?1:-1).slice(0,20);
+  return `<div class="view">
+   <div class="row"><h2>Deliveries</h2><small class="muted">Pre-orders and party orders that aren't delivered yet, by delivery date.</small></div>
+   ${dates.length?`<div class="card view" style="gap:8px"><div class="row" style="justify-content:space-between"><h3>What to make</h3>
+     <select id="delDay" style="width:auto">${dates.map(d=>`<option value="${d}" ${d===delDay?"selected":""}>${h(label(d))}</option>`).join("")}</select></div>
+     ${Object.keys(make).length?`<table><tbody>${Object.entries(make).sort((a,b)=>b[1]-a[1]).map(([n,q])=>`<tr><td>${h(n)}</td><td class="r num"><b>${q}</b></td></tr>`).join("")}</tbody></table>`:`<small class="muted">Nothing for this day.</small>`}
+     <small class="muted">Totals across all undelivered orders for that day.</small></div>`:""}
+   ${open.length?order.filter(k=>groups[k]).map(k=>`<div class="view" style="gap:8px"><h3 style="color:${k==="overdue"?"var(--bad)":"var(--muted)"}">${k==="overdue"?"Overdue":h(label(k==="none"?"":k))} · ${groups[k].length}</h3>${groups[k].map(card).join("")}</div>`).join("")
+     :`<div class="card muted">No deliveries waiting. Pre-orders and party orders appear here when you choose “Pre-order” or “Party / delivery” on a new order.</div>`}
+   ${done.length?`<details ${delShowDone?"open":""} id="dDone"><summary>Recently delivered (${done.length})</summary><div class="olist" style="margin-top:8px">${done.map(o=>`<button class="card ocard" data-open="${o.id}"><span class="no">${h(o.no)}</span><span style="min-width:0"><b>${h(o.cust&&o.cust.name||"")}</b> <small class="muted">for ${o.deliverOn?fmtDate(o.deliverOn):"–"}</small><span class="it" style="display:block">${h(o.items.map(l=>l.qty+"× "+l.name).join(", "))}</span></span><span class="num"><b>${inr(o.total)}</b></span></button>`).join("")}</div></details>`:""}
+  </div>`;
+}
+
+/* ---------- Customers ---------- */
+let custSearch="";
+function customerList(){
+  const map={};
+  S.orders.filter(o=>!o.deleted&&o.status!=="cancelled"&&o.cust&&(o.cust.phone||o.cust.name)).forEach(o=>{
+    const k=normPhone(o.cust.phone)||("name:"+o.cust.name.trim().toLowerCase());
+    const c=map[k]=map[k]||{key:k,name:"",phone:normPhone(o.cust.phone),flat:"",orders:[],spent:0,stamps:0,last:""};
+    c.orders.push(o); c.spent+=o.total; if(o.stamp) c.stamps++;
+    if(o.createdAt>c.last){ c.last=o.createdAt; c.name=o.cust.name||c.name; c.flat=o.cust.flat||c.flat; }
+  });
+  return Object.values(map).sort((a,b)=>a.last<b.last?1:-1);
+}
+function viewCustomers(){
+  const q=custSearch.trim().toLowerCase();
+  const list=customerList().filter(c=>!q||(c.name+" "+c.phone+" "+c.flat).toLowerCase().includes(q));
+  const all=customerList(); const rep=all.filter(c=>c.orders.length>1).length;
+  return `<div class="view">
+   <div class="row"><h2>Customers</h2><input id="csearch" type="search" placeholder="Search name, phone or flat" value="${h(custSearch)}" style="flex:1 1 220px"></div>
+   <small class="muted">${all.length} customer${all.length===1?"":"s"} who agreed to save their details · ${rep} came back more than once.</small>
+   ${list.length?`<div class="card tw"><table><thead><tr><th>Name</th><th>Phone</th><th>Flat / address</th><th class="r">Orders</th><th class="r">Spent</th><th>Loyalty card</th><th>Last order</th></tr></thead><tbody>${
+     list.map(c=>{ const card=c.stamps%10, next=card<5?5-card:10-card;
+       return `<tr data-cust="${h(c.key)}" style="cursor:pointer"><td><b>${h(c.name||"–")}</b></td><td class="num">${h(c.phone)}</td><td>${h(c.flat)}</td><td class="r num">${c.orders.length}</td><td class="r num">${inr(c.spent)}</td>
+       <td><span class="num">${card}/10</span> <small class="muted">${c.phone?(card===0&&c.stamps?"new card":next+" to treat"):"needs phone"}</small></td><td>${fmtDate(c.last)}</td></tr>`; }).join("")}</tbody></table><small class="muted">Tap a row to see their orders.</small></div>`
+     :`<div class="card muted">${q?"No customer matches that search.":"No saved customers yet. When a customer is happy to share, tick the box under Customer details on a new order."}</div>`}
+  </div>`;
+}
+function openCustomer(key){
+  const c=customerList().find(x=>x.key===key); if(!c) return;
+  const coupons=S.couponIssues.filter(x=>!x.deleted&&c.phone&&normPhone(x.phone)===c.phone);
+  openSheet(`<div class="row" style="justify-content:space-between"><h2>${h(c.name||c.phone)}</h2><button class="ghost" data-act="close">Close</button></div>
+   <small class="muted">${h([c.phone,c.flat].filter(Boolean).join(" · "))}</small>
+   <div class="kpis"><div class="kpi"><span>Orders</span><b class="num">${c.orders.length}</b></div><div class="kpi"><span>Spent</span><b class="num">${inr(c.spent)}</b></div><div class="kpi"><span>Stamps</span><b class="num">${c.stamps%10}/10</b></div></div>
+   ${coupons.length?`<div class="note p-soft">Coupon cards: ${coupons.map(x=>h(x.code)+(activeOrders().some(o=>o.couponCode===x.code)?" (used)":" (not used yet)")).join(", ")}</div>`:""}
+   <div class="olist">${c.orders.slice().sort((a,b)=>a.createdAt<b.createdAt?1:-1).map(o=>`<button class="card ocard" data-open="${o.id}"><span class="no">${h(o.no)}</span><span style="min-width:0"><small class="muted">${fmtDate(o.createdAt)}</small><span class="it" style="display:block">${h(o.items.map(l=>l.qty+"× "+l.name).join(", "))}</span></span><b class="num">${inr(o.total)}</b></button>`).join("")}</div>`);
+}
+
+/* ---------- Settings, menu, CSV ---------- */
+function viewSettings(){
+  const st=S.settings;
+  const given=S.couponIssues.filter(c=>!c.deleted).length, used=activeOrders().filter(o=>o.couponCode).length;
+  return `<div class="view">
+   <div class="card view" style="gap:10px" id="syncBox">${syncBoxHtml()}</div>
+   <div class="card view" style="gap:10px"><h2>Save &amp; move data (CSV)</h2>
+    <p style="margin:0">Everything is saved in this browser on this device. Export the CSV files every evening as a backup. To bring orders from the other laptop, export there and import the files here: orders are matched by ID, so importing twice never doubles anything.</p>
+    <div class="row"><button class="primary" data-act="exportAll">Export all CSV files</button>
+    <label class="row" style="gap:6px"><span class="muted" style="font-weight:800;font-size:13px">Import CSV files</span><input id="importFiles" type="file" accept=".csv,text/csv" multiple style="width:auto"></label></div>
+    <small class="muted">Files: orders, order_items, expenses, coupons, stock, menu, customers (customers is a summary for Excel; it isn't imported back). You can open them in Excel or Google Sheets. Change prices in menu.csv and import it to update the menu.</small>
+    <div id="importResult"></div>
+   </div>
+   <div class="card view" style="gap:10px"><h2>This device</h2>
+    <div class="grid2"><label class="f">Device letter (goes before order numbers: A-01, B-01)<input id="sLetter" maxlength="2" value="${h(S.device.letter)}"></label></div>
+    <small class="muted">Use a different letter on each phone or laptop so order numbers never clash.</small></div>
+   <div class="card view" style="gap:10px"><h2>Offers</h2>
+    <div class="grid2">
+     <label class="f">Coupon discount %<input id="sPct" type="number" min="0" value="${st.couponPct}"></label>
+     <label class="f">Coupon maximum ₹<input id="sMax" type="number" min="0" value="${st.couponMax}"></label>
+     <label class="f">Give a coupon card on orders of ₹<input id="sIssue" type="number" min="0" value="${st.couponIssueMin}"></label>
+     <label class="f">Coupon valid for (days after giving)<input id="sDays" type="number" min="1" value="${st.couponDays}"></label>
+     <label class="f">Loyalty stamp on orders of ₹ or more<input id="sLoy" type="number" min="0" value="${st.loyaltyMin}"></label>
+    </div>
+    <small class="muted num">Coupon cards: ${S.couponCodes.length} codes · ${given} given out · ${used} used. Loyalty: 10 stamps per card, a treat at the 5th and 10th.</small>
+    <button class="primary" data-act="saveSettings" style="align-self:flex-start">Save offers</button></div>
+   <div class="card tw"><div class="row" style="justify-content:space-between;margin-bottom:8px"><h2>Menu</h2><button class="primary" data-act="saveMenu">Save menu</button></div>
+    <p class="muted" style="margin:0 0 8px;font-size:13px">“Cost to make” is what one piece or pack costs in ingredients and packaging. Fill it in to see real profit per item on the Dashboard.</p>
+    <table><thead><tr><th>On menu</th><th>Item</th><th class="r">Price ₹</th><th class="r">Cost to make ₹</th><th class="r">Profit each</th></tr></thead><tbody>${
+     S.menu.items.filter(i=>!i.hidden).map(i=>i.variants.map((v,vi)=>`<tr><td>${vi===0?`<input type="checkbox" data-mact="${i.id}" ${i.active?"checked":""} style="width:auto" aria-label="Show ${h(i.name)}">`:""}</td><td>${h(i.name)}${v.label?" – "+h(v.label):""}</td><td class="r"><input class="num" type="number" min="0" data-mprice="${i.id}|${v.id}" value="${v.price}" style="width:90px;text-align:right" aria-label="Price ${h(i.name)} ${h(v.label)}"></td><td class="r"><input class="num" type="number" min="0" step="0.5" data-mcost="${i.id}|${v.id}" value="${v.cost||""}" placeholder="–" style="width:90px;text-align:right" aria-label="Cost to make ${h(i.name)} ${h(v.label)}"></td><td class="r num">${v.cost?`${inr(v.price-v.cost)} <small class="muted">(${Math.round((v.price-v.cost)/v.price*100)}%)</small>`:'<small class="muted">add cost</small>'}</td></tr>`).join("")).join("")}</tbody></table>
+    <h3 style="margin:14px 0 6px">Usual quantity made (used when a new stock day starts)</h3>
+    <table><tbody>${S.menu.pools.map(p=>`<tr><td>${h(p.name)}</td><td class="r"><input class="num" type="number" min="0" data-mdef="${p.id}" value="${p.def}" style="width:90px;text-align:right"></td></tr>`).join("")}</tbody></table>
+    <h3 style="margin:14px 0 6px">Add a new item</h3>
+    <div class="grid2"><label class="f">Name<input id="nName"></label><label class="f">Section<select id="nCat">${CATS.map(c=>`<option>${c}</option>`).join("")}</select></label>
+     <label class="f">Price ₹<input id="nPrice" type="number" min="0"></label><label class="f">Usual quantity made (0 = made to order)<input id="nQty" type="number" min="0" value="0"></label></div>
+    <button data-act="addItem" style="margin-top:8px">Add item</button>
+   </div>
+   <div class="card view" style="gap:8px"><h2>Start fresh</h2><small class="muted">Deletes every order, expense and stock day on this device only, and turns sync off here. Synced data stays online and comes back if you join again.</small>
+    <div class="row"><button class="danger" data-act="resetAsk">Delete all data on this device</button></div><div id="resetConfirm"></div></div>
+  </div>`;
+}
+
+/* Sync settings box */
+let syncSetup=null; // {url, anon, key} while setting up for the first time
+function syncBoxHtml(){
+  if(S.sync&&S.sync.url){
+    const pend=pendingRecords().length;
+    return `<h2>Online sync</h2>
+     <div class="row">${syncState.err?`<span class="pill p-bad">Problem</span>`:pend?`<span class="pill p-warn">${pend} change${pend>1?"s":""} waiting</span>`:`<span class="pill p-ok">Up to date</span>`}
+     <small class="muted">Last synced ${S.sync.lastOk?fmtDate(S.sync.lastOk)+" "+fmtTime(S.sync.lastOk):"never"} · syncs by itself every minute and after every change when there's internet.</small></div>
+     ${syncState.err?`<div class="note p-bad">${h(syncState.err)}</div>`:""}
+     <div class="row"><button class="primary" data-act="syncNow">Sync now</button><button data-act="showCode">Connect another device</button><button class="danger" data-act="syncOffAsk">Turn off sync here</button></div>
+     <div id="codeBox"></div>`;
+  }
+  if(syncSetup) return `<h2>Set up online sync · step 2 of 2</h2>
+     <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px">
+      <li>In Supabase, open <b>SQL Editor → New query</b>.</li>
+      <li>Copy everything in the box below, paste it there and press <b>Run</b>. It should say “Success. No rows returned”.</li>
+      <li>Come back and press <b>Connect</b>.</li></ol>
+     <textarea id="sqlBox" readonly rows="8" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px">${h(SYNC_SQL(syncSetup.key))}</textarea>
+     <div class="row"><button data-act="copySql">Copy the SQL</button><button class="primary" data-act="syncConnect">Connect</button><button data-act="syncSetupCancel">Back</button></div>
+     <small class="muted">The SQL includes this shop's private key. Anyone without it can't read or change the data, even with the Supabase link.</small>`;
+  return `<h2>Online sync</h2>
+    <p style="margin:0">Keeps this device, the other laptop and the phone in step whenever there's internet. Orders are always saved here first, so the stall keeps working offline.</p>
+    <details><summary>Another device is already syncing: join it</summary>
+      <div class="view" style="gap:8px;margin-top:8px"><small class="muted">On the device that's already syncing, open Data &amp; settings → Connect another device and copy the connection code. Paste it here.</small>
+      <textarea id="joinCode" rows="3" placeholder="Paste the connection code"></textarea>
+      <button class="primary" data-act="syncJoin" style="align-self:flex-start">Join</button></div></details>
+    <details><summary>First time: set up the online database</summary>
+      <div class="view" style="gap:8px;margin-top:8px">
+      <small class="muted">Create a free project at supabase.com. Then in the project open <b>Project Settings → API</b> (or <b>Connect</b>) and copy the <b>Project URL</b> and the <b>anon / publishable</b> key. Never use the secret or service_role key.</small>
+      <label class="f">Project URL<input id="supUrl" placeholder="https://abcd1234.supabase.co"></label>
+      <label class="f">anon / publishable key<input id="supAnon" placeholder="sb_publishable_… or eyJ…"></label>
+      <button class="primary" data-act="syncSetupNext" style="align-self:flex-start">Next</button></div></details>`;
+}
+
+/* CSV */
+function csvEsc(v){ v=v==null?"":String(v); return /[",\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function toCsv(rows,cols){ return "﻿"+[cols.join(","),...rows.map(r=>cols.map(c=>csvEsc(r[c])).join(","))].join("\r\n"); }
+function parseCsv(text){
+  text=text.replace(/^﻿/,""); const rows=[]; let row=[],f="",q=false;
+  for(let i=0;i<text.length;i++){ const c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){f+='"';i++;} else q=false; } else f+=c; }
+    else if(c==='"') q=true; else if(c===","){row.push(f);f="";} else if(c==="\n"){row.push(f);rows.push(row);row=[];f="";} else if(c!=="\r") f+=c; }
+  if(f!==""||row.length){row.push(f);rows.push(row);}
+  const head=(rows.shift()||[]).map(x=>x.trim());
+  return {head, rows:rows.filter(r=>r.some(x=>x!=="")).map(r=>Object.fromEntries(head.map((k,i)=>[k,r[i]??""])))};
+}
+function download(name,text){
+  const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type:"text/csv;charset=utf-8"})); a.download=name;
+  document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1500);
+}
+const O_COLS=["id","order_no","created_at","updated_at","device","type","status","customer_name","phone","flat","items","subtotal","coupon_used","coupon_discount","other_discount","total","paid_upi","paid_cash","balance","loyalty_stamp","coupon_given","deliver_on","delivered","notes","stock_day_id","deleted"];
+const I_COLS=["order_id","order_no","created_at","item_id","variant_id","item","qty","unit_price","list_price","free","loyalty_treat","line_total","cost_each","line_cost","stock_pool","pool_units_each"];
+const E_COLS=["id","date","category","type","amount","paid_by","note","updated_at","deleted"];
+const C_COLS=["code","given_to","phone","given_on","given_order_id","used_on","used_order_no","updated_at"];
+const S_COLS=["stock_day_id","stock_day","started_at","pool_id","item","prepared","sold","left","updated_at"];
+const M_COLS=["item_id","variant_id","section","item","variant","price","cost_to_make","on_menu","eggless","stock_pool","pool_units_each","usual_quantity"];
+function exportAll(){
+  const d=dayKey(new Date());
+  const ord=S.orders.map(o=>({id:o.id,order_no:o.no,created_at:o.createdAt,updated_at:o.updatedAt,device:o.device,type:o.type,status:o.status,
+    customer_name:o.cust?o.cust.name:"",phone:o.cust?o.cust.phone:"",flat:o.cust?o.cust.flat:"",items:o.items.map(l=>l.qty+"x "+l.name+(l.free?" (free)":"")).join("; "),
+    subtotal:o.subtotal,coupon_used:o.couponCode,coupon_discount:o.couponDisc,other_discount:o.manualDisc,total:o.total,paid_upi:o.paidUpi,paid_cash:o.paidCash,balance:o.total-paidOf(o),
+    loyalty_stamp:o.stamp?"yes":"",coupon_given:o.issuedCoupon,deliver_on:o.deliverOn,delivered:o.delivered?"yes":"",notes:o.notes,stock_day_id:o.sessionId,deleted:o.deleted?"yes":""}));
+  const items=[]; S.orders.forEach(o=>o.items.forEach(l=>items.push({order_id:o.id,order_no:o.no,created_at:o.createdAt,item_id:l.itemId,variant_id:l.variantId,item:l.name,qty:l.qty,unit_price:l.price,list_price:l.listPrice,free:l.free?"yes":"",loyalty_treat:l.reward?"yes":"",line_total:l.free?0:l.qty*l.price,cost_each:lineCost(l),line_cost:l.qty*lineCost(l),stock_pool:l.pool,pool_units_each:l.uses})));
+  const exp=S.expenses.map(x=>({id:x.id,date:x.date,category:x.category,type:x.kind,amount:x.amount,paid_by:x.paidBy,note:x.note,updated_at:x.updatedAt,deleted:x.deleted?"yes":""}));
+  const cps=S.couponCodes.map(c=>{ const i=S.couponIssues.find(x=>x.code===c&&!x.deleted); const u=activeOrders().find(o=>o.couponCode===c);
+    return {code:c,given_to:i?i.name:"",phone:i?i.phone:"",given_on:i?i.date:"",given_order_id:i?i.orderId:"",used_on:u?u.createdAt:"",used_order_no:u?u.no:"",updated_at:i?i.updatedAt:""}; });
+  const stk=[]; S.sessions.filter(s=>!s.deleted).forEach(s=>{ const sd=soldBySession(s.id); S.menu.pools.forEach(p=>stk.push({stock_day_id:s.id,stock_day:s.name,started_at:s.startedAt,pool_id:p.id,item:p.name,prepared:s.prepared[p.id]??0,sold:sd[p.id]||0,left:(s.prepared[p.id]??0)-(sd[p.id]||0),updated_at:s.updatedAt})); });
+  const mnu=[]; S.menu.items.forEach(i=>i.variants.forEach(v=>{ const p=S.menu.pools.find(p=>p.id===v.pool); mnu.push({item_id:i.id,variant_id:v.id,section:i.cat,item:i.name,variant:v.label,price:v.price,cost_to_make:v.cost||"",on_menu:i.active?"yes":"no",eggless:i.eggless?"yes":"",stock_pool:v.pool,pool_units_each:v.uses,usual_quantity:p?p.def:""}); }));
+  const files=[["orders",toCsv(ord,O_COLS)],["order_items",toCsv(items,I_COLS)],["expenses",toCsv(exp,E_COLS)],["coupons",toCsv(cps,C_COLS)],["stock",toCsv(stk,S_COLS)],["menu",toCsv(mnu,M_COLS)],["customers",toCsv(customerList().map(c=>({name:c.name,phone:c.phone,flat:c.flat,orders:c.orders.length,spent:c.spent,loyalty_stamps:c.stamps,last_order:c.last})),["name","phone","flat","orders","spent","loyalty_stamps","last_order"])]];
+  files.forEach(([n,t],i)=>setTimeout(()=>download("rarebite_"+n+"_"+d+".csv",t),i*400));
+  S.lastExport=now(); S.ordersSinceExport=0; save();
+  toast("Exporting 7 CSV files. If the browser asks, allow multiple downloads.");
+}
+function newer(a,b){ return String(a||"")>String(b||""); }
+async function importFiles(files){
+  const texts={}; for(const f of files){ const t=await f.text(); const p=parseCsv(t); texts[f.name]=p; }
+  const res=[]; const yes=v=>String(v).toLowerCase()==="yes";
+  // order_items first, grouped by order
+  const itemsBy={};
+  Object.values(texts).forEach(p=>{ if(p.head.includes("order_id")&&p.head.includes("pool_units_each")) p.rows.forEach(r=>{ (itemsBy[r.order_id]=itemsBy[r.order_id]||[]).push({itemId:r.item_id,variantId:r.variant_id,name:r.item,qty:+r.qty||0,price:+r.unit_price||0,listPrice:+r.list_price||0,free:yes(r.free),reward:yes(r.loyalty_treat),cost:r.cost_each===undefined||r.cost_each===""?null:+r.cost_each,pool:r.stock_pool,uses:+r.pool_units_each||1}); }); });
+  for(const [name,p] of Object.entries(texts)){
+    const H=p.head;
+    if(H.includes("order_no")&&H.includes("paid_upi")){
+      let add=0,upd=0,skip=0;
+      p.rows.forEach(r=>{ const items=itemsBy[r.id]; const ex=S.orders.find(o=>o.id===r.id);
+        if(!items&&!ex){ skip++; return; }
+        const o={id:r.id,no:r.order_no,createdAt:r.created_at,updatedAt:r.updated_at,device:r.device,type:r.type,status:r.status,sessionId:r.stock_day_id,
+          cust:(r.customer_name||r.phone||r.flat)?{name:r.customer_name,phone:r.phone,flat:r.flat}:null,items:items||ex.items,subtotal:+r.subtotal||0,couponCode:r.coupon_used,
+          couponDisc:+r.coupon_discount||0,manualDisc:+r.other_discount||0,total:+r.total||0,paidUpi:+r.paid_upi||0,paidCash:+r.paid_cash||0,stamp:yes(r.loyalty_stamp),
+          issuedCoupon:r.coupon_given,deliverOn:r.deliver_on,delivered:yes(r.delivered),notes:r.notes,deleted:yes(r.deleted)};
+        if(!ex){ S.orders.push(o); add++; } else if(newer(o.updatedAt,ex.updatedAt)){ Object.assign(ex,o); upd++; } });
+      res.push(`Orders: ${add} new, ${upd} updated`+(skip?`, ${skip} skipped (import order_items.csv with orders.csv)`:""));
+    } else if(H.includes("category")&&H.includes("amount")){
+      let add=0,upd=0;
+      p.rows.forEach(r=>{ const x={id:r.id||uid(),date:r.date,category:r.category,kind:r.type==="investment"?"investment":"running",amount:+r.amount||0,paidBy:r.paid_by,note:r.note,updatedAt:r.updated_at||now(),deleted:yes(r.deleted)};
+        const ex=S.expenses.find(e=>e.id===x.id); if(!ex){S.expenses.push(x);add++;} else if(newer(x.updatedAt,ex.updatedAt)){Object.assign(ex,x);upd++;} });
+      res.push(`Expenses: ${add} new, ${upd} updated`);
+    } else if(H.includes("code")||H.includes("Code")){
+      let codes=0,iss=0;
+      p.rows.forEach(r=>{ const code=String(r.code||r.Code||"").trim().toUpperCase(); if(!code) return;
+        if(!S.couponCodes.includes(code)){S.couponCodes.push(code);codes++;}
+        const to=r.given_to||r["Given to (name / flat)"]||""; const on=r.given_on||r["Given on"]||"";
+        if(to||on){ const ex=S.couponIssues.find(c=>c.code===code); const upd=r.updated_at||now();
+          if(!ex){S.couponIssues.push({id:code,code,name:to,phone:r.phone||"",date:on?new Date(on).toISOString():now(),orderId:r.given_order_id||"",updatedAt:upd});iss++;}
+          else if(newer(upd,ex.updatedAt)){Object.assign(ex,{name:to,phone:r.phone||ex.phone,updatedAt:upd});} } });
+      if(codes) S.settingsUpdatedAt=now();
+      res.push(`Coupons: ${codes} new codes, ${iss} new “given to” records`);
+    } else if(H.includes("stock_day_id")&&H.includes("prepared")){
+      let add=0;
+      p.rows.forEach(r=>{ let s=S.sessions.find(x=>x.id===r.stock_day_id);
+        if(!s){ s={id:r.stock_day_id,name:r.stock_day,startedAt:r.started_at,prepared:{},updatedAt:r.updated_at}; S.sessions.push(s); add++; }
+        if(!newer(s.updatedAt,r.updated_at)) s.prepared[r.pool_id]=+r.prepared||0; });
+      res.push(`Stock days: ${add} new`);
+    } else if(H.includes("variant_id")&&H.includes("on_menu")){
+      let n=0;
+      p.rows.forEach(r=>{ let it=findItem(r.item_id);
+        if(!it){ it={id:r.item_id,cat:r.section,name:r.item,eggless:yes(r.eggless),hidden:false,active:true,variants:[]}; S.menu.items.push(it); }
+        it.active=r.on_menu!=="no"; it.name=r.item||it.name;
+        let v=it.variants.find(v=>v.id===r.variant_id); if(!v){ v={id:r.variant_id,label:r.variant,price:0,pool:r.stock_pool,uses:+r.pool_units_each||1}; it.variants.push(v); }
+        v.price=+r.price||0; v.label=r.variant; if(r.cost_to_make!==undefined&&r.cost_to_make!=="") v.cost=+r.cost_to_make||0;
+        if(r.stock_pool){ let pl=S.menu.pools.find(p=>p.id===r.stock_pool); if(!pl){ pl={id:r.stock_pool,name:r.item,def:0}; S.menu.pools.push(pl); } if(r.usual_quantity!=="") pl.def=+r.usual_quantity||0; }
+        n++; });
+      S.menu.updatedAt=now(); res.push(`Menu: ${n} rows updated`);
+    } else if(H.includes("loyalty_stamps")&&H.includes("last_order")){ /* customers summary: built from orders, nothing to import */
+    } else if(!(H.includes("order_id")&&H.includes("pool_units_each"))){ res.push(`${name}: not a Rare Bite CSV, skipped`); }
+  }
+  save(); render();
+  const box=$("#importResult"); if(box) box.innerHTML=`<div class="note p-ok">${res.map(h).join("<br>")}</div>`;
+}
+
+/* =========================================================
+   8. EVENTS (one listener for clicks, one for typing)
+   ========================================================= */
+document.addEventListener("click", e=>{
+  const b=e.target.closest("button,[data-exp],[data-cust]"); if(!b) return;
+  const d=b.dataset;
+  if(d.tab) return setTab(d.tab);
+  if(d.cat){ menuCat=d.cat; document.querySelectorAll("#mcats button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.cat===menuCat)); return renderMenu(); }
+  if(d.add){ const [i,v]=d.add.split("|"); return addLine(i,v); }
+  if(d.inc||d.dec){ const l=cart.lines.find(x=>x.key===(d.inc||d.dec)); if(!l) return;
+    if(d.inc){ if(cart.useStock&&l.pool){ const left=leftMap(cart.lines); if(left[l.pool]<l.uses){ toast("No more left of that."); return; } } l.qty++; }
+    else { l.qty--; if(l.qty<=0) cart.lines=cart.lines.filter(x=>x!==l); }
+    renderMenu(); return renderCart(); }
+  if(d.free){ const l=cart.lines.find(x=>x.key===d.free); if(l){ l.free=!l.free; } return renderCart(); }
+  if(d.type){ cart.type=d.type; cart.useStock = d.type==="stall"; renderMenu(); return renderCart(); }
+  if(d.pay){ cart.payMode=d.pay; return renderCart(); }
+  if(d.of){ ordFilter=d.of; return render(); }
+  if(d.open) return openOrder(d.open);
+  if(d.cust!==undefined && b.matches("[data-cust]")) return openCustomer(d.cust);
+  if(d.kot) return showKot(d.kot);
+  if(d.period){ period=d.period; return render(); }
+  if(d.exp!==undefined && b.matches("[data-exp]")){ expEdit={...S.expenses.find(x=>x.id===d.exp)}; render(); return; }
+  if(d.copy){ const o=S.orders.find(x=>x.id===d.id); const txt=d.copy==="kot"?kotText(o):receiptText(o);
+    (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Copied"),()=>toast("Couldn't copy. Select the text and copy it.")); return; }
+  if(d.payOrder){ const o=S.orders.find(x=>x.id===d.payOrder); const u=+$("#rpUpi").value||0, c=+$("#rpCash").value||0;
+    if(u+c<=0) return toast("Enter an amount.");
+    if(paidOf(o)+u+c>o.total) return toast("That's more than the balance of "+inr(o.total-paidOf(o))+".");
+    o.paidUpi=(+o.paidUpi||0)+u; o.paidCash=(+o.paidCash||0)+c; o.updatedAt=now(); S.ordersSinceExport++; save(); closeSheet(); render(); return toast("Payment saved"); }
+  if(d.deliver){ const o=S.orders.find(x=>x.id===d.deliver); o.delivered=true; o.updatedAt=now(); S.ordersSinceExport++; save(); closeSheet(); render(); return toast("Marked delivered"); }
+  if(d.cancelAsk){ $("#cxConfirm").innerHTML=`<div class="note p-bad">Cancel this order? Its items go back into stock and any coupon on it can be used again. <div class="row" style="margin-top:8px"><button class="danger" data-cancel="${d.cancelAsk}">Yes, cancel it</button><button data-act="close">Keep it</button></div></div>`; return; }
+  if(d.cancel){ const o=S.orders.find(x=>x.id===d.cancel); o.status="cancelled"; o.updatedAt=now();
+    S.couponIssues.filter(c=>c.orderId===o.id).forEach(c=>{c.deleted=true;c.updatedAt=now();});
+    S.ordersSinceExport++; save(); closeSheet(); render(); return toast("Order "+o.no+" cancelled"); }
+  switch(d.act){
+    case "close": return closeSheet();
+    case "eod": return showEod();
+    case "copyEod": { const txt=eodText(); (navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast("Copied"),()=>toast("Couldn't copy. Select the text and copy it.")); return; }
+    case "print": return window.print();
+    case "clear": resetCart(); renderMenu(); return renderCart();
+    case "toCart": return $("#cart").scrollIntoView({behavior:"smooth"});
+    case "treat": { const v=findVariant("loyalty_treat","std"); cart.lines.push({key:uid(),itemId:"loyalty_treat",variantId:"std",name:findItem("loyalty_treat").name,qty:1,price:0,listPrice:0,free:true,pool:"",uses:1,reward:true}); return renderCart(); }
+    case "applyCoupon": {
+      if(cart.couponOk){ cart.couponOk=false; cart.couponCode=""; return renderCart(); }
+      cart.couponCode=($("#coupon").value||"").trim().toUpperCase(); const s=couponStatus(cart.couponCode); cart.couponOk=s.ok; return renderCart(); }
+    case "saveOrder": return saveOrder();
+    case "newSession": { const n=($("#newSessName").value||"").trim()||("Stall – "+fmtDate(new Date())); newSession(n); save(); render(); return toast("Started “"+n+"”"); }
+    case "saveExp": {
+      const amt=+$("#eAmt").value; if(!(amt>0)) return toast("Enter the amount.");
+      const x={id:expEdit&&expEdit.id||uid(), date:$("#eDate").value||dayKey(new Date()), category:$("#eCat").value, kind:$("#eKind").value, amount:amt, paidBy:$("#ePaid").value.trim(), note:$("#eNote").value.trim(), updatedAt:now()};
+      const ex=S.expenses.find(e=>e.id===x.id); if(ex) Object.assign(ex,x); else S.expenses.push(x);
+      expEdit=null; S.ordersSinceExport++; save(); render(); return toast(ex?"Expense updated":"Expense added"); }
+    case "cancelExp": expEdit=null; return render();
+    case "delExp": { const ex=S.expenses.find(e=>e.id===expEdit.id); ex.deleted=true; ex.updatedAt=now(); expEdit=null; S.ordersSinceExport++; save(); render(); return toast("Expense deleted"); }
+    case "saveSettings": {
+      S.settings={loyaltyMin:+$("#sLoy").value||0, couponIssueMin:+$("#sIssue").value||0, couponPct:+$("#sPct").value||0, couponMax:+$("#sMax").value||0, couponDays:+$("#sDays").value||90};
+      S.settingsUpdatedAt=now();
+      save(); return toast("Offers saved"); }
+    case "saveMenu": {
+      document.querySelectorAll("[data-mprice]").forEach(i=>{ const [it,v]=i.dataset.mprice.split("|"); const vv=findVariant(it,v); if(vv) vv.price=+i.value||0; });
+      document.querySelectorAll("[data-mcost]").forEach(i=>{ const [it,v]=i.dataset.mcost.split("|"); const vv=findVariant(it,v); if(vv) vv.cost=+i.value||0; });
+      document.querySelectorAll("[data-mact]").forEach(i=>{ const it=findItem(i.dataset.mact); if(it) it.active=i.checked; });
+      document.querySelectorAll("[data-mdef]").forEach(i=>{ const p=S.menu.pools.find(p=>p.id===i.dataset.mdef); if(p) p.def=+i.value||0; });
+      S.menu.updatedAt=now(); save(); render(); return toast("Menu saved"); }
+    case "addItem": {
+      const name=$("#nName").value.trim(), price=+$("#nPrice").value, qty=+$("#nQty").value||0;
+      if(!name||!(price>=0)) return toast("Enter a name and price.");
+      const id=name.toLowerCase().replace(/[^a-z0-9]+/g,"_").replace(/^_|_$/g,"")+"_"+uid().slice(0,4);
+      let pool=""; if(qty>0){ pool=id; S.menu.pools.push({id,name,def:qty}); const s=currentSession(); s.prepared[id]=qty; s.updatedAt=now(); }
+      S.menu.items.push({id,cat:$("#nCat").value,name,eggless:false,hidden:false,active:true,variants:[{id:"std",label:"",price,pool,uses:1}]});
+      S.menu.updatedAt=now(); save(); render(); return toast(name+" added"); }
+    case "exportAll": return exportAll();
+    case "syncNow": return syncNow(true);
+    case "syncSetupNext": { const url=cleanUrl($("#supUrl").value), anon=$("#supAnon").value.trim();
+      if(!/^https:\/\/.+/.test(url)||!anon) return toast("Enter the Project URL and the anon / publishable key.");
+      if(/service_role|sb_secret_/.test(anon)) return toast("That's the secret key. Use the anon / publishable key instead.");
+      syncSetup={url,anon,key:makeKey()}; $("#syncBox").innerHTML=syncBoxHtml(); return; }
+    case "syncSetupCancel": syncSetup=null; $("#syncBox").innerHTML=syncBoxHtml(); return;
+    case "copySql": { const t=$("#sqlBox"); (navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("SQL copied"),()=>{ t.select(); toast("Press Ctrl+C / Cmd+C to copy"); }); return; }
+    case "syncConnect": { S.sync={...syncSetup,pushed:{},cursor:""}; syncSetup=null; save(true); $("#syncBox").innerHTML=syncBoxHtml(); return syncNow(true); }
+    case "syncJoin": { const c=readConnCode($("#joinCode").value); if(!c) return toast("That connection code isn't complete. Copy it again.");
+      S.sync={...c,pushed:{},cursor:""}; save(true); $("#syncBox").innerHTML=syncBoxHtml(); return syncNow(true); }
+    case "showCode": { const code=connCode();
+      $("#codeBox").innerHTML=`<div class="note p-soft view" style="gap:6px"><b>Connection code</b><small>Send this to the other device (e.g. WhatsApp it to yourself), then paste it there under Online sync → join. Give each device its own letter.</small>
+        <textarea id="connCode" readonly rows="3" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px">${h(code)}</textarea><button data-act="copyCode" style="align-self:flex-start">Copy code</button>
+        <small>Keep it private: anyone with this code can see and change the shop's orders.</small></div>`; return; }
+    case "copyCode": { const t=$("#connCode"); (navigator.clipboard?navigator.clipboard.writeText(t.value):Promise.reject()).then(()=>toast("Code copied"),()=>{ t.select(); toast("Press Ctrl+C / Cmd+C to copy"); }); return; }
+    case "syncOffAsk": $("#codeBox").innerHTML=`<div class="note p-bad">Stop syncing on this device? Its data stays here; it just stops sending and receiving. <div class="row" style="margin-top:8px"><button class="danger" data-act="syncOff">Turn off</button><button data-act="syncOffCancel">Keep syncing</button></div></div>`; return;
+    case "syncOffCancel": $("#codeBox").innerHTML=""; return;
+    case "syncOff": { delete S.sync; syncState.err=""; save(true); render(); return toast("Sync turned off on this device"); }
+    case "useSuggest": { const s=currentSession(), sd=soldBySession(s.id);
+      const ch=S.menu.pools.map(p=>[p,suggestQty(s.prepared[p.id]??0,sd[p.id]||0)]).filter(([p,sg])=>(s.prepared[p.id]??0)>0&&sg!==p.def);
+      $("#sgConfirm").innerHTML=ch.length?`<div class="note p-soft">These usual quantities will change: ${h(ch.map(([p,sg])=>p.name+" "+p.def+" → "+sg).join(", "))}.
+        <div class="row" style="margin-top:8px"><button class="primary" data-act="useSuggestDo">Update ${ch.length} quantit${ch.length>1?"ies":"y"}</button><button data-act="sgCancel">Not now</button></div></div>`:`<div class="note p-soft">The suggestions already match the usual quantities.</div>`; return; }
+    case "sgCancel": $("#sgConfirm").innerHTML=""; return;
+    case "useSuggestDo": { const s=currentSession(), sd=soldBySession(s.id); let n=0;
+      S.menu.pools.forEach(p=>{ const sg=suggestQty(s.prepared[p.id]??0,sd[p.id]||0); if((s.prepared[p.id]??0)>0&&sg!==p.def){ p.def=sg; n++; } });
+      S.menu.updatedAt=now(); save(); render(); return toast(n+" usual quantities updated. The next stock day starts from them."); }
+    case "resetAsk": $("#resetConfirm").innerHTML=`<div class="note p-bad">This can't be undone. <button class="danger" data-act="resetDo" style="margin-left:6px">Yes, delete everything here</button></div>`; return;
+    case "resetDo": { const letter=S.device.letter; S=blankState(); S.device.letter=letter; newSession("Stall – "+fmtDate(new Date())); save(); resetCart(); setTab("order"); return toast("All data on this device deleted"); }
+  }
+});
+document.addEventListener("input", e=>{
+  const t=e.target, id=t.id;
+  if(id==="msearch"){ menuSearch=t.value; return renderMenu(); }
+  if(id==="csearch"){ custSearch=t.value; const pos=t.selectionStart; render(); const n=$("#csearch"); n.focus(); n.setSelectionRange(pos,pos); return; }
+  if(id==="osearch"){ ordSearch=t.value; const pos=t.selectionStart; render(); const n=$("#osearch"); n.focus(); n.setSelectionRange(pos,pos); return; }
+  if(id==="cName") cart.cust.name=t.value;
+  if(id==="cFlat") cart.cust.flat=t.value;
+  if(id==="notes") cart.notes=t.value;
+  if(id==="giveCoupon") cart.giveCoupon=t.value;
+  if(id==="pUpi") cart.paidUpi=t.value;
+  if(id==="pCash") cart.paidCash=t.value;
+  if(id==="coupon"){ cart.couponCode=t.value; cart.couponOk=false; }
+  if(id==="deliverOn") cart.deliverOn=t.value;
+});
+document.addEventListener("change", e=>{
+  const t=e.target, id=t.id;
+  if(id==="useStock"){ cart.useStock=t.checked; renderMenu(); return renderCart(); }
+  if(id==="consent"){ cart.consent=t.checked; return renderCart(); }
+  if(id==="cPhone"){ cart.cust.phone=t.value; const c=lastCustomer(t.value);
+    if(c){ if(!cart.cust.name) cart.cust.name=c.name; if(!cart.cust.flat) cart.cust.flat=c.flat; cart.consent=true; toast("Returning customer: "+(c.name||c.phone)); }
+    return renderCart(); }
+  if(id==="manualDisc"||id==="pUpi"||id==="pCash"){ if(id==="manualDisc") cart.manualDisc=+t.value||0; return renderCart(); }
+  if(t.dataset.prep){ const s=currentSession(); s.prepared[t.dataset.prep]=+t.value||0; s.updatedAt=now(); save(); return render(); }
+  if(id==="delDay"){ delDay=t.value; return render(); }
+  if(id==="sLetter"){ S.device.letter=(t.value.trim().toUpperCase()||"A"); save(); return toast("Orders from this device will start with "+S.device.letter); }
+  if(id==="importFiles"&&t.files.length){ importFiles([...t.files]); t.value=""; }
+});
+document.addEventListener("toggle", e=>{ if(e.target.id==="dCust") cart.custOpen=e.target.open; if(e.target.id==="dCoupon") cart.couponOpen=e.target.open; if(e.target.id==="dDone") delShowDone=e.target.open; }, true);
+$("#overlay").addEventListener("click", e=>{ if(e.target.id==="overlay") closeSheet(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"&&!$("#overlay").hidden) closeSheet(); });
+
+/* start */
+load(); resetCart(); setTab("order");
+if(syncOn()) scheduleSync(800);
+if("serviceWorker" in navigator && /^https?:$/.test(location.protocol) && location.hostname!=="localhost-nosw"){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
+</script>
+</body>
+</html>
